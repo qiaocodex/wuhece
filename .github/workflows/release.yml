@@ -1,0 +1,46 @@
+# 发布：推送 vX.Y.Z 标签后，自动从 CHANGELOG.md 提取对应段落创建 GitHub Release
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验标签与 pubspec 版本一致
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PUBSPEC_VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/version: //;s/+.*//')
+          echo "tag=$TAG_VERSION pubspec=$PUBSPEC_VERSION"
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "::error::标签 v$TAG_VERSION 与 pubspec.yaml 版本 $PUBSPEC_VERSION 不一致，请先更新 pubspec.yaml"
+            exit 1
+          fi
+
+      - name: 从 CHANGELOG 提取版本说明
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
+            /^## \[/ && flag {exit}
+            flag {print}
+          ' CHANGELOG.md > release_body.md
+          if [ ! -s release_body.md ]; then
+            echo "CHANGELOG.md 中没有找到 [${VERSION}] 段落，使用默认说明" >&2
+            echo "归物 ${GITHUB_REF_NAME} 发布" > release_body.md
+          fi
+          cat release_body.md
+
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_body.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
