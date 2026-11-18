@@ -4,6 +4,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/)，版本号遵循语义化版本（SemVer），
 与 `pubspec.yaml` 的 `version` 保持一致。
 
+## [1.0.1] - 2026-11-19
+
+### 构建与发布
+
+- GitHub Release 现在自动附加三平台构建产物：
+  - `guiwu-vX.Y.Z-android.apk` — Android 通用安装包（含 arm64 / armeabi-v7a / x86_64）
+  - `guiwu-vX.Y.Z-web.zip` — Web 静态包，解压后需经 HTTP 访问（如 `python -m http.server`），直接双击 index.html 无法运行
+  - `guiwu-vX.Y.Z-windows.zip` — Windows 免安装版，解压后运行 `guiwu.exe`（首次运行如遇 SmartScreen 提示，属未签名应用正常现象，选「仍要运行」）
+- 发布流水线：标签与 pubspec 版本一致性校验 → 三平台并行构建 → 自动创建 Release 并附加产物
+- macOS 包因需开发者签名与公证暂不自动提供，可在装有 Xcode 的机器上执行 `flutter build macos` 构建
+
 ## [1.0.0] - 2026-11-19
 
 ### 首个版本：Web 单页版重构为 Flutter 四端应用

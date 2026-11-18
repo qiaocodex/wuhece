@@ -35,11 +35,13 @@ flutter build windows         # Windows 可执行程序 → build/windows/x64/ru
    git tag v1.1.0
    git push origin main v1.1.0
    ```
-5. **自动发布**：GitHub Actions 会校验标签与 pubspec 版本一致，并从 `CHANGELOG.md`
-   提取对应段落自动创建 GitHub Release（版本说明同步，无需手动填）。
+5. **自动发布**：GitHub Actions 会校验标签与 pubspec 版本一致，三平台并行构建
+   （Android APK / Web zip / Windows zip），并从 `CHANGELOG.md` 提取对应段落
+   自动创建 GitHub Release 并附加构建产物（版本说明与下载包全自动，无需手动填）。
 
 CI（`ci.yml`）在每次推送 main / PR 时自动运行 analyze + test；
-Release（`release.yml`）在推送 `v*` 标签时自动发布版本说明。
+Release（`release.yml`）在推送 `v*` 标签时自动三平台构建并发布。
+macOS 产物因需签名公证暂不在流水线内，可本地 `flutter build macos`。
 
 ## 架构
 
