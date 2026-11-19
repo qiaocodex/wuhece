@@ -62,4 +62,23 @@ void main() {
     expect(find.text('使用偏好'), findsOneWidget);
     expect(find.text('闲置判定天数'), findsOneWidget);
   });
+
+  testWidgets('设置页 @ 390×844 手机尺寸构建无异常', (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await _pump(tester, const SettingsPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('数据管理'), findsOneWidget);
+    expect(find.text('闲置判定天数'), findsOneWidget);
+  });
+
+  testWidgets('设置页 @ 平板宽屏尺寸构建无异常', (tester) async {
+    tester.view.physicalSize = const Size(1600, 2000);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.reset);
+    await _pump(tester, const SettingsPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('数据管理'), findsOneWidget);
+  });
 }

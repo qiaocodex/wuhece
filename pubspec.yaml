@@ -2,7 +2,7 @@ name: guiwu
 description: "归物 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.14.0
@@ -29,6 +29,40 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # 应用图标与启动屏生成（配置见下方 flutter_launcher_icons / flutter_native_splash 段）
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icons/
+
+flutter_launcher_icons:
+  image_path: "assets/icons/icon-legacy.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#2E6B5E"
+  adaptive_icon_foreground: "assets/icons/icon-foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icons/icon-legacy.png"
+    background_color: "#2E6B5E"
+    theme_color: "#2E6B5E"
+  windows:
+    generate: true
+    image_path: "assets/icons/icon-legacy.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/icon-legacy.png"
+
+flutter_native_splash:
+  color: "#2E6B5E"
+  image: "assets/icons/splash-logo.png"
+  android_12:
+    image: "assets/icons/splash-logo.png"
+    color: "#2E6B5E"
+  web: true
