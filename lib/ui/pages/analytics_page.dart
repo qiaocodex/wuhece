@@ -55,8 +55,8 @@ class AnalyticsPage extends StatelessWidget {
                 label: '平均单件价值',
                 value: money(avgValue),
                 hint: '按物品条目数计算',
-                iconBg: GColors.blueWeak,
-                iconColor: GColors.blue,
+                iconBg: context.gc.blueWeak,
+                iconColor: context.gc.blue,
               ),
               StatCard(
                 icon: Icons.check_circle_outline,
@@ -64,16 +64,16 @@ class AnalyticsPage extends StatelessWidget {
                 value: '$inUsePct',
                 valueSuffix: '%',
                 hint: '$inUseCount 件处于在用状态',
-                iconBg: GColors.primaryWeak,
-                iconColor: GColors.primary,
+                iconBg: context.gc.primaryWeak,
+                iconColor: context.gc.primary,
               ),
               StatCard(
                 icon: Icons.schedule,
                 label: '闲置资产价值',
                 value: money(idleValue),
                 hint: '可考虑转售或转赠',
-                iconBg: GColors.amberWeak,
-                iconColor: GColors.amber,
+                iconBg: context.gc.amberWeak,
+                iconColor: context.gc.amber,
               ),
             ]),
             const SizedBox(height: kSectionGap),
@@ -86,12 +86,12 @@ class AnalyticsPage extends StatelessWidget {
             twoColumns(
               context,
               _roomUsageCard(context, rooms),
-              _statusCard(statuses, active.length),
+              _statusCard(context, statuses, active.length),
             ),
             const SizedBox(height: kSectionGap),
             twoColumns(
               context,
-              _yearCard(years, maxYearCount),
+              _yearCard(context, years, maxYearCount),
               _rankingCard(context, ranking),
             ),
           ],
@@ -167,10 +167,10 @@ class AnalyticsPage extends StatelessWidget {
       sub: '库存容量压力排行',
       action: TextButton(
         onPressed: () => ShellNav.maybeOf(context)?.go(2),
-        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        child: Row(mainAxisSize: MainAxisSize.min, children: const [
-          Text('管理空间', style: TextStyle(fontSize: 12.5, color: GColors.muted)),
-          Icon(Icons.chevron_right, size: 14, color: GColors.muted2),
+        style: TextButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 6), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text('管理空间', style: TextStyle(fontSize: 12.5, color: context.gc.muted)),
+          Icon(Icons.chevron_right, size: 14, color: context.gc.muted2),
         ]),
       ),
       child: rooms.isEmpty
@@ -193,7 +193,7 @@ class AnalyticsPage extends StatelessWidget {
     );
   }
 
-  Widget _statusCard(List<StatusCount> statuses, int activeCount) {
+  Widget _statusCard(BuildContext context, List<StatusCount> statuses, int activeCount) {
     return SectionCard(
       title: '物品状态',
       sub: '在用 / 闲置 / 借出分布',
@@ -207,10 +207,10 @@ class AnalyticsPage extends StatelessWidget {
                     valueText: '${s.count} 件 · ${activeCount == 0 ? 0 : (s.count / activeCount * 100).round()}%',
                     pct: activeCount == 0 ? 0 : (s.count / activeCount * 100).round(),
                     color: switch (s.key) {
-                      'in_use' => GColors.primary,
-                      'idle' => GColors.amber,
-                      'lent' => GColors.blue,
-                      _ => GColors.muted2,
+                      'in_use' => context.gc.primary,
+                      'idle' => context.gc.amber,
+                      'lent' => context.gc.blue,
+                      _ => context.gc.muted2,
                     },
                   ),
               ],
@@ -218,7 +218,7 @@ class AnalyticsPage extends StatelessWidget {
     );
   }
 
-  Widget _yearCard(List<YearStat> years, int maxYearCount) {
+  Widget _yearCard(BuildContext context, List<YearStat> years, int maxYearCount) {
     return SectionCard(
       title: '购入年份分布',
       sub: '了解物品的新旧结构与沉没成本',
@@ -231,7 +231,7 @@ class AnalyticsPage extends StatelessWidget {
                     name: '${y.year} 年',
                     valueText: '${y.count} 件 · ${money(y.value)}',
                     pct: (y.count / maxYearCount * 100).round(),
-                    color: GColors.accent,
+                    color: context.gc.accent,
                   ),
               ],
             ),
@@ -263,7 +263,7 @@ class AnalyticsPage extends StatelessWidget {
                             height: 22,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: i < 3 ? GColors.primaryWeak : GColors.bgDeep,
+                              color: i < 3 ? context.gc.primaryWeak : context.gc.bgDeep,
                               borderRadius: BorderRadius.circular(7),
                             ),
                             child: Text(
@@ -271,7 +271,7 @@ class AnalyticsPage extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: i < 3 ? GColors.primary : GColors.muted,
+                                color: i < 3 ? context.gc.primary : context.gc.muted,
                               ),
                             ),
                           ),
@@ -287,12 +287,12 @@ class AnalyticsPage extends StatelessWidget {
                                         ranking[i].item.name,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft),
+                                        style: TextStyle(fontSize: 12.5, color: context.gc.inkSoft),
                                       ),
                                     ),
                                     Text(
                                       '${ranking[i].uses} 次',
-                                      style: const TextStyle(fontSize: 11.5, color: GColors.muted),
+                                      style: TextStyle(fontSize: 11.5, color: context.gc.muted),
                                     ),
                                   ],
                                 ),
@@ -304,8 +304,8 @@ class AnalyticsPage extends StatelessWidget {
                                         ? 0
                                         : ranking[i].uses / ranking[0].uses,
                                     minHeight: 6,
-                                    backgroundColor: GColors.bgDeep,
-                                    valueColor: const AlwaysStoppedAnimation(GColors.primary),
+                                    backgroundColor: context.gc.bgDeep,
+                                    valueColor: AlwaysStoppedAnimation(context.gc.primary),
                                   ),
                                 ),
                               ],

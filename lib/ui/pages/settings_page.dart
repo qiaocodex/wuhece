@@ -17,6 +17,7 @@ import '../../store/app_store.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'category_form.dart';
+import 'tags_page.dart';
 
 part 'sync_section.dart';
 
@@ -29,10 +30,10 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: GColors.bg,
-        surfaceTintColor: GColors.bg,
+        backgroundColor: context.gc.bg,
+        surfaceTintColor: context.gc.bg,
         scrolledUnderElevation: 0,
-        title: const Text('设置', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: GColors.ink)),
+        title: Text('设置', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: context.gc.ink)),
         actions: [
           IconButton(
             icon: const Icon(Icons.close, size: 20),
@@ -125,15 +126,15 @@ class SettingsPage extends StatelessWidget {
           ),
           _SettingRow(
             title: '清空全部数据',
-            titleColor: GColors.danger,
+            titleColor: context.gc.danger,
             desc: '删除本机保存的所有物品、空间与记录，不可撤销',
             action: OutlinedButton.icon(
               onPressed: () => _clearAll(context),
               icon: const Icon(Icons.delete_outline, size: 14),
               label: const Text('清空'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: GColors.danger,
-                side: const BorderSide(color: GColors.dangerWeak),
+                foregroundColor: context.gc.danger,
+                side: BorderSide(color: context.gc.dangerWeak),
               ),
             ),
           ),
@@ -282,10 +283,10 @@ class SettingsPage extends StatelessWidget {
                     decoration: BoxDecoration(color: hexToColor(cat.color), borderRadius: BorderRadius.circular(5)),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(cat.name, style: const TextStyle(fontSize: 13, color: GColors.ink))),
+                  Expanded(child: Text(cat.name, style: TextStyle(fontSize: 13, color: context.gc.ink))),
                   Text(
                     '${stats.where((s) => s.category.id == cat.id).firstOrNull?.count ?? 0} 件',
-                    style: const TextStyle(fontSize: 12, color: GColors.muted),
+                    style: TextStyle(fontSize: 12, color: context.gc.muted),
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -294,7 +295,7 @@ class SettingsPage extends StatelessWidget {
                     child: IconButton(
                       onPressed: () => openCategoryForm(context, cat),
                       icon: const Icon(Icons.edit_outlined, size: 14),
-                      color: GColors.muted,
+                      color: context.gc.muted,
                       padding: EdgeInsets.zero,
                     ),
                   ),
@@ -304,13 +305,22 @@ class SettingsPage extends StatelessWidget {
                     child: IconButton(
                       onPressed: () => _deleteCategory(context, cat),
                       icon: const Icon(Icons.delete_outline, size: 14),
-                      color: GColors.danger,
+                      color: context.gc.danger,
                       padding: EdgeInsets.zero,
                     ),
                   ),
                 ],
               ),
             ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const TagsPage()),
+            ),
+            icon: const Icon(Icons.sell_outlined, size: 14),
+            label: Text('标签管理（${store.tagStats().length} 个）'),
+          ),
         ],
       ),
     );
@@ -346,9 +356,26 @@ class SettingsPage extends StatelessWidget {
 
     return SectionCard(
       title: '使用偏好',
-      sub: '影响整理建议的判定规则',
+      sub: '外观与整理建议的判定规则',
       child: Column(
         children: [
+          _SettingRow(
+            title: '深色模式',
+            desc: '跟随系统 / 浅色 / 深色（当前 ${_themeModeLabel(store.settings.themeMode)}）',
+            action: SelectField<String>(
+              value: store.settings.themeMode,
+              items: const [
+                DropdownMenuItem(value: 'system', child: Text('跟随系统')),
+                DropdownMenuItem(value: 'light', child: Text('浅色')),
+                DropdownMenuItem(value: 'dark', child: Text('深色')),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                AppStore.instance.updateSettings(themeMode: v);
+                toast(context, '外观已更新');
+              },
+            ),
+          ),
           _SettingRow(
             title: '闲置判定天数',
             desc: '超过这个天数未记录使用，就提示整理（当前 ${store.settings.idleDays} 天）',
@@ -378,7 +405,7 @@ class SettingsPage extends StatelessWidget {
             desc: '已使用 ${bytesText(used)} · ${store.items.length} 条物品记录',
             action: Text(
               '$imageCount 张图片',
-              style: const TextStyle(fontSize: 12, color: GColors.muted),
+              style: TextStyle(fontSize: 12, color: context.gc.muted),
             ),
           ),
           const SizedBox(height: 8),
@@ -390,16 +417,16 @@ class SettingsPage extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: pct / 100,
                   minHeight: 7,
-                  backgroundColor: GColors.bgDeep,
-                  valueColor: AlwaysStoppedAnimation(pct >= 80 ? GColors.danger : GColors.primary),
+                  backgroundColor: context.gc.bgDeep,
+                  valueColor: AlwaysStoppedAnimation(pct >= 80 ? context.gc.danger : context.gc.primary),
                 ),
               ),
               const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('含 $imageCount 张图片', style: const TextStyle(fontSize: 11, color: GColors.muted2)),
-                  Text('$pct%', style: const TextStyle(fontSize: 11, color: GColors.muted2)),
+                  Text('含 $imageCount 张图片', style: TextStyle(fontSize: 11, color: context.gc.muted2)),
+                  Text('$pct%', style: TextStyle(fontSize: 11, color: context.gc.muted2)),
                 ],
               ),
             ],
@@ -409,6 +436,12 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  String _themeModeLabel(String mode) => switch (mode) {
+        'light' => '浅色',
+        'dark' => '深色',
+        _ => '跟随系统',
+      };
+
   /* ------------------------- 关于 ------------------------- */
 
   Widget _aboutSection(BuildContext context) {
@@ -416,21 +449,21 @@ class SettingsPage extends StatelessWidget {
     return SectionCard(
       title: '关于物盒册',
       sub: '个人物品资产与收纳空间管理',
-      action: const MiniBadge(label: 'Flutter 1.0'),
+      action: MiniBadge(label: 'Flutter 1.0'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '物盒册帮助你盘点个人资产、规划收纳空间，并根据使用频率给出整理建议。'
             '应用完全离线运行，数据仅保存在本机，不会上传到任何服务器。'
             '支持 Android / iOS / Web / Windows / macOS 五端，数据格式与 Web 版互通，建议定期导出 JSON 备份。',
-            style: TextStyle(fontSize: 12.5, color: GColors.muted, height: 1.8),
+            style: TextStyle(fontSize: 12.5, color: context.gc.muted, height: 1.8),
           ),
           const Divider(),
           const SizedBox(height: 6),
           Text(
             '物品 ${store.items.length} 条 · 空间 ${store.spaces.length} 个 · 分类 ${store.categories.length} 个 · ${formatDate(toISODate())}',
-            style: const TextStyle(fontSize: 11.5, color: GColors.muted2),
+            style: TextStyle(fontSize: 11.5, color: context.gc.muted2),
           ),
         ],
       ),
@@ -496,7 +529,7 @@ class _AiSectionState extends State<_AiSection> {
     return SectionCard(
       title: 'AI 助手',
       sub: '自然语言对话录入物品（智谱 GLM）',
-      action: const MiniBadge(label: 'Beta', color: GColors.accent, bg: GColors.accentWeak),
+      action: MiniBadge(label: 'Beta', color: context.gc.accent, bg: context.gc.accentWeak),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -548,12 +581,12 @@ class _AiSectionState extends State<_AiSection> {
             ],
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             '在 open.bigmodel.cn（智谱开放平台）注册后，于「API Keys」页面创建 Key；'
             'glm-4.5-flash 为免费模型。Key 仅保存在本机，请求由设备直连智谱，'
             '对话内容用于解析录入指令。Web 端可能受浏览器跨域策略限制，'
             '建议在桌面 / 移动端使用 AI 对话。',
-            style: TextStyle(fontSize: 11, color: GColors.muted2, height: 1.6),
+            style: TextStyle(fontSize: 11, color: context.gc.muted2, height: 1.6),
           ),
         ],
       ),
@@ -582,10 +615,10 @@ class _SettingRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: titleColor ?? GColors.ink),
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: titleColor ?? context.gc.ink),
                 ),
                 const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(fontSize: 12, color: GColors.muted, height: 1.5)),
+                Text(desc, style: TextStyle(fontSize: 12, color: context.gc.muted, height: 1.5)),
               ],
             ),
           ),

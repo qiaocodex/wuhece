@@ -8,6 +8,7 @@ import '../../services/format.dart';
 import '../../store/app_store.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'image_viewer_page.dart';
 import 'item_detail.dart';
 import 'item_form.dart';
 
@@ -30,7 +31,7 @@ class ItemsPageState extends State<ItemsPage> {
   String _category = 'all';
   String _status = 'all';
   String _sort = 'recent';
-  bool _gridView = true;
+  String _view = 'grid'; // grid | list | photos
   bool _searchFocused = false;
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
@@ -93,7 +94,7 @@ class ItemsPageState extends State<ItemsPage> {
               _q.isEmpty
                   ? '共 ${list.length} 件物品'
                   : '搜索「$_q」找到 ${list.length} 件物品',
-              style: const TextStyle(fontSize: 12.5, color: GColors.muted),
+              style: TextStyle(fontSize: 12.5, color: context.gc.muted),
             ),
             const SizedBox(height: 12),
             if (list.isEmpty)
@@ -134,12 +135,12 @@ class ItemsPageState extends State<ItemsPage> {
                 },
                 decoration: InputDecoration(
                   hintText: '搜索名称、标签、位置或备注',
-                  prefixIcon: const Icon(Icons.search, size: 18, color: GColors.muted),
+                  prefixIcon: Icon(Icons.search, size: 18, color: context.gc.muted),
                   prefixIconConstraints: const BoxConstraints(minWidth: 40),
                   suffixIcon: _q.isEmpty
                       ? null
                       : IconButton(
-                          icon: const Icon(Icons.close, size: 15, color: GColors.muted),
+                          icon: Icon(Icons.close, size: 15, color: context.gc.muted),
                           onPressed: () {
                             _searchCtrl.clear();
                             setState(() => _q = '');
@@ -194,16 +195,16 @@ class ItemsPageState extends State<ItemsPage> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: GColors.surface,
+        color: context.gc.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GColors.line),
+        border: Border.all(color: context.gc.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text('最近搜索', style: TextStyle(fontSize: 11.5, color: GColors.muted2)),
+              Text('最近搜索', style: TextStyle(fontSize: 11.5, color: context.gc.muted2)),
               const Spacer(),
               TextButton(
                 onPressed: () {
@@ -215,7 +216,7 @@ class ItemsPageState extends State<ItemsPage> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('清空', style: TextStyle(fontSize: 11.5, color: GColors.muted)),
+                child: Text('清空', style: TextStyle(fontSize: 11.5, color: context.gc.muted)),
               ),
             ],
           ),
@@ -247,15 +248,16 @@ class ItemsPageState extends State<ItemsPage> {
   Widget _viewToggle() {
     return Container(
       decoration: BoxDecoration(
-        color: GColors.surfaceSoft,
+        color: context.gc.surfaceSoft,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GColors.lineStrong),
+        border: Border.all(color: context.gc.lineStrong),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _toggleBtn(Icons.grid_view, _gridView, () => setState(() => _gridView = true)),
-          _toggleBtn(Icons.format_list_bulleted, !_gridView, () => setState(() => _gridView = false)),
+          _toggleBtn(Icons.grid_view, _view == 'grid', () => setState(() => _view = 'grid')),
+          _toggleBtn(Icons.format_list_bulleted, _view == 'list', () => setState(() => _view = 'list')),
+          _toggleBtn(Icons.photo_library_outlined, _view == 'photos', () => setState(() => _view = 'photos')),
         ],
       ),
     );
@@ -269,10 +271,10 @@ class ItemsPageState extends State<ItemsPage> {
         margin: const EdgeInsets.all(3),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: active ? GColors.primaryWeak : Colors.transparent,
+          color: active ? context.gc.primaryWeak : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
-        child: Icon(icon, size: 15, color: active ? GColors.primary : GColors.muted),
+        child: Icon(icon, size: 15, color: active ? context.gc.primary : context.gc.muted),
       ),
     );
   }
@@ -336,8 +338,89 @@ class ItemsPageState extends State<ItemsPage> {
     return items;
   }
 
+  /// 图片墙：只展示有照片的物品
+  Widget _photosView(BuildContext context, AppStore store, List<Item> items) {
+    final photoItems = items.where((it) => (it.image ?? '').isNotEmpty).toList();
+    if (photoItems.isEmpty) {
+      return EmptyState(
+        icon: Icons.photo_library_outlined,
+        title: '还没有带图片的物品',
+        desc: '给物品拍张照，就能在这里快速浏览。',
+        action: FilledButton.icon(
+          onPressed: () => openItemForm(context),
+          icon: const Icon(Icons.add, size: 14),
+          label: const Text('新增物品'),
+        ),
+      );
+    }
+    final wide = isWide(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = wide ? 4 : 3;
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (var i = 0; i < photoItems.length; i++)
+              SizedBox(width: width, child: _photoCell(context, store, photoItems, i)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _photoCell(BuildContext context, AppStore store, List<Item> photoItems, int index) {
+    final item = photoItems[index];
+    return Material(
+      color: GColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => openImageViewer(context, photoItems, index),
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: ItemThumb(image: item.image, color: GColors.primary, size: double.infinity, iconSize: 32, fill: true),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    store.spacePathLabel(item.spaceId),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: context.gc.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _list(BuildContext context, AppStore store, List<Item> items) {
-    if (!_gridView) {
+    if (_view == 'photos') {
+      return _photosView(context, store, items);
+    }
+    if (_view == 'list') {
       return Column(
         children: [
           for (final item in items) ...[
@@ -371,7 +454,7 @@ class ItemsPageState extends State<ItemsPage> {
     final catColor = hexToColor(cat?.color);
     final unplaced = item.spaceId == null;
     return Material(
-      color: GColors.surface,
+      color: context.gc.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => openItemDetail(context, item.id),
@@ -389,12 +472,12 @@ class ItemsPageState extends State<ItemsPage> {
                     item.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: context.gc.ink),
                   ),
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      Icon(Icons.push_pin, size: 11, color: unplaced ? GColors.amber : GColors.muted2),
+                      Icon(Icons.push_pin, size: 11, color: unplaced ? context.gc.amber : context.gc.muted2),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -403,7 +486,7 @@ class ItemsPageState extends State<ItemsPage> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: unplaced ? GColors.amber : GColors.muted,
+                            color: unplaced ? context.gc.amber : context.gc.muted,
                           ),
                         ),
                       ),
@@ -414,7 +497,7 @@ class ItemsPageState extends State<ItemsPage> {
                     children: [
                       Text(
                         money(item.value),
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink),
                       ),
                       const Spacer(),
                       _cardAction(context, store, item, Icons.check, '记一次使用', () {
@@ -498,7 +581,7 @@ class ItemsPageState extends State<ItemsPage> {
       child: IconButton(
         onPressed: onTap,
         icon: Icon(icon, size: 15),
-        color: GColors.muted,
+        color: context.gc.muted,
         tooltip: tip,
         padding: EdgeInsets.zero,
         iconSize: 15,
@@ -512,7 +595,7 @@ class ItemsPageState extends State<ItemsPage> {
     final cat = store.getCategory(item.categoryId);
     final catColor = hexToColor(cat?.color);
     return Material(
-      color: GColors.surface,
+      color: context.gc.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => openItemDetail(context, item.id),
@@ -533,14 +616,14 @@ class ItemsPageState extends State<ItemsPage> {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: context.gc.ink),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${cat?.name ?? '未分类'} · ${store.spacePathLabel(item.spaceId)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5, color: GColors.muted),
+                      style: TextStyle(fontSize: 11.5, color: context.gc.muted),
                     ),
                     const SizedBox(height: 5),
                     Row(
@@ -556,7 +639,7 @@ class ItemsPageState extends State<ItemsPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(money(item.value), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.ink)),
+              Text(money(item.value), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink)),
               const SizedBox(width: 4),
               _cardAction(context, store, item, Icons.check, '记一次使用', () {
                 store.logUsage(item.id, type: 'use');

@@ -411,12 +411,14 @@ class AppStore extends ChangeNotifier {
     String? owner,
     String? aiApiKey,
     String? aiModel,
+    String? themeMode,
   }) {
     if (idleDays != null) settings.idleDays = idleDays;
     if (currency != null) settings.currency = currency;
     if (owner != null) settings.owner = owner;
     if (aiApiKey != null) settings.aiApiKey = aiApiKey.isEmpty ? null : aiApiKey;
     if (aiModel != null) settings.aiModel = aiModel;
+    if (themeMode != null) settings.themeMode = themeMode;
     _commit();
   }
 
@@ -441,6 +443,51 @@ class AppStore extends ChangeNotifier {
 
   void clearSearchHistory() {
     _prefs.remove(_searchHistoryKey);
+  }
+
+  /* ------------------------- 标签 ------------------------- */
+
+  /// 所有标签及使用计数（按频次降序）
+  Map<String, int> tagStats() {
+    final map = <String, int>{};
+    for (final it in items) {
+      for (final t in it.tags) {
+        map[t] = (map[t] ?? 0) + 1;
+      }
+    }
+    final entries = map.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(entries);
+  }
+
+  /// 批量重命名标签（保持原顺序并去重）
+  void renameTag(String oldTag, String newTag) {
+    final clean = newTag.trim();
+    if (clean.isEmpty || oldTag == clean) return;
+    var changed = false;
+    for (final it in items) {
+      if (it.tags.contains(oldTag)) {
+        final seen = <String>{};
+        it.tags = it.tags
+            .map((t) => t == oldTag ? clean : t)
+            .where((t) => seen.add(t))
+            .toList();
+        changed = true;
+      }
+    }
+    if (changed) _commit();
+  }
+
+  /// 从所有物品移除标签
+  void removeTag(String tag) {
+    var changed = false;
+    for (final it in items) {
+      if (it.tags.contains(tag)) {
+        it.tags = it.tags.where((t) => t != tag).toList();
+        changed = true;
+      }
+    }
+    if (changed) _commit();
   }
 
   /* ------------------------- 统计 ------------------------- */

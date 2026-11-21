@@ -56,7 +56,7 @@ class PageHeader extends StatelessWidget {
             children: [
               Text(title, style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 3),
-              Text(sub, style: const TextStyle(fontSize: 13, color: GColors.muted)),
+              Text(sub, style: TextStyle(fontSize: 13, color: context.gc.muted)),
             ],
           ),
           actionRow,
@@ -77,7 +77,7 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: GColors.surface,
+        color: context.gc.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(color: Color(0x0A2C261E), blurRadius: 6, offset: Offset(0, 2)),
@@ -122,7 +122,7 @@ class SectionCard extends StatelessWidget {
                     Text(title, style: Theme.of(context).textTheme.titleMedium),
                     if (sub != null) ...[
                       const SizedBox(height: 2),
-                      Text(sub!, style: const TextStyle(fontSize: 12, color: GColors.muted)),
+                      Text(sub!, style: TextStyle(fontSize: 12, color: context.gc.muted)),
                     ],
                   ],
                 ),
@@ -151,8 +151,8 @@ class StatCard extends StatelessWidget {
     required this.value,
     this.valueSuffix,
     this.hint,
-    this.iconBg = GColors.primaryWeak,
-    this.iconColor = GColors.primary,
+    this.iconBg,
+    this.iconColor,
     this.badge,
   });
 
@@ -161,8 +161,8 @@ class StatCard extends StatelessWidget {
   final String value;
   final String? valueSuffix;
   final String? hint;
-  final Color iconBg;
-  final Color iconColor;
+  final Color? iconBg;
+  final Color? iconColor;
   final String? badge;
 
   @override
@@ -174,28 +174,28 @@ class StatCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _iconBox(),
+              _iconBox(context),
               if (badge != null) ...[
                 const Spacer(),
-                Text(badge!, style: const TextStyle(fontSize: 11, color: GColors.muted)),
+                Text(badge!, style: TextStyle(fontSize: 11, color: context.gc.muted)),
               ],
             ],
           ),
           const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontSize: 12, color: GColors.muted)),
+          Text(label, style: TextStyle(fontSize: 12, color: context.gc.muted)),
           const SizedBox(height: 2),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 value,
-                style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w700, color: GColors.ink, height: 1.15),
+                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700, color: context.gc.ink, height: 1.15),
               ),
               if (valueSuffix != null)
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 2),
                   child: Text(valueSuffix!,
-                      style: const TextStyle(fontSize: 11.5, color: GColors.muted, fontWeight: FontWeight.w500)),
+                      style: TextStyle(fontSize: 11.5, color: context.gc.muted, fontWeight: FontWeight.w500)),
                 ),
             ],
           ),
@@ -205,7 +205,7 @@ class StatCard extends StatelessWidget {
               hint!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11.5, color: GColors.muted2),
+              style: TextStyle(fontSize: 11.5, color: context.gc.muted2),
             ),
           ],
         ],
@@ -213,12 +213,16 @@ class StatCard extends StatelessWidget {
     );
   }
 
-  Widget _iconBox() => Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, size: 18, color: iconColor),
-      );
+  Widget _iconBox(BuildContext context) {
+        final iconBg = this.iconBg ?? context.gc.primaryWeak;
+        final iconColor = this.iconColor ?? context.gc.primary;
+        return Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, size: 18, color: iconColor),
+        );
+      }
 }
 
 /// 响应式统计卡网格：宽屏一行 4 个，窄屏 2×2
@@ -271,10 +275,10 @@ class MeterBar extends StatelessWidget {
     final double p = pct == null ? 0.0 : pct!.clamp(0, 100).toDouble() / 100;
     final fill = color ??
         (pct != null && pct! >= 100
-            ? GColors.danger
+            ? context.gc.danger
             : pct != null && pct! >= 90
-                ? GColors.amber
-                : GColors.primary);
+                ? context.gc.amber
+                : context.gc.primary);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Column(
@@ -287,11 +291,11 @@ class MeterBar extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: GColors.inkSoft),
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: context.gc.inkSoft),
                 ),
               ),
               const SizedBox(width: 8),
-              Text(valueText, style: const TextStyle(fontSize: 12, color: GColors.muted)),
+              Text(valueText, style: TextStyle(fontSize: 12, color: context.gc.muted)),
             ],
           ),
           const SizedBox(height: 5),
@@ -300,7 +304,7 @@ class MeterBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: p,
               minHeight: 7,
-              backgroundColor: GColors.bgDeep,
+              backgroundColor: context.gc.bgDeep,
               valueColor: AlwaysStoppedAnimation(fill),
             ),
           ),
@@ -346,6 +350,7 @@ class DonutChart extends StatelessWidget {
             painter: _DonutPainter(
               segments: segments.where((s) => s.value > 0).toList(),
               strokeWidth: strokeWidth,
+              emptyColor: context.gc.bgDeep,
             ),
           ),
           Column(
@@ -353,10 +358,10 @@ class DonutChart extends StatelessWidget {
             children: [
               Text(
                 centerTitle,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: GColors.ink),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.gc.ink),
               ),
               if (centerSub.isNotEmpty)
-                Text(centerSub, style: const TextStyle(fontSize: 11, color: GColors.muted)),
+                Text(centerSub, style: TextStyle(fontSize: 11, color: context.gc.muted)),
             ],
           ),
         ],
@@ -366,10 +371,11 @@ class DonutChart extends StatelessWidget {
 }
 
 class _DonutPainter extends CustomPainter {
-  _DonutPainter({required this.segments, required this.strokeWidth});
+  _DonutPainter({required this.segments, required this.strokeWidth, required this.emptyColor});
 
   final List<DonutSegment> segments;
   final double strokeWidth;
+  final Color emptyColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -379,7 +385,7 @@ class _DonutPainter extends CustomPainter {
       height: size.height - strokeWidth,
     );
     if (segments.isEmpty) {
-      canvas.drawArc(inner, 0, 2 * pi, true, Paint()..color = GColors.bgDeep);
+      canvas.drawArc(inner, 0, 2 * pi, true, Paint()..color = emptyColor);
       return;
     }
     final total = segments.fold(0.0, (s, seg) => s + seg.value);
@@ -427,10 +433,10 @@ class LegendList extends StatelessWidget {
                     r.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft),
+                    style: TextStyle(fontSize: 12.5, color: context.gc.inkSoft),
                   ),
                 ),
-                Text(r.value, style: const TextStyle(fontSize: 12, color: GColors.muted)),
+                Text(r.value, style: TextStyle(fontSize: 12, color: context.gc.muted)),
               ],
             ),
           ),
@@ -457,12 +463,13 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = kStatusMeta[status] ?? kStatusMeta['in_use']!;
+    final colors = context.gc;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: toneWeakColor(meta.tone), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: colors.toneWeakColor(meta.tone), borderRadius: BorderRadius.circular(999)),
       child: Text(
         meta.label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: toneColor(meta.tone)),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colors.toneColor(meta.tone)),
       ),
     );
   }
@@ -470,18 +477,20 @@ class StatusBadge extends StatelessWidget {
 
 /// 通用小徽章
 class MiniBadge extends StatelessWidget {
-  const MiniBadge({super.key, required this.label, this.color = GColors.primary, this.bg = GColors.primaryWeak});
+  const MiniBadge({super.key, required this.label, this.color, this.bg});
 
   final String label;
-  final Color color;
-  final Color bg;
+  final Color? color;
+  final Color? bg;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedColor = color ?? context.gc.primary;
+    final resolvedBg = bg ?? context.gc.primaryWeak;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+      decoration: BoxDecoration(color: resolvedBg, borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: resolvedColor)),
     );
   }
 }
@@ -497,11 +506,11 @@ class TagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color: GColors.surfaceSoft,
+        color: context.gc.surfaceSoft,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: GColors.line),
+        border: Border.all(color: context.gc.line),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 11, color: GColors.muted)),
+      child: Text(text, style: TextStyle(fontSize: 11, color: context.gc.muted)),
     );
   }
 }
@@ -523,9 +532,9 @@ class PillChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? GColors.primary : GColors.surface,
+          color: active ? context.gc.primary : context.gc.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: active ? GColors.primary : GColors.lineStrong),
+          border: Border.all(color: active ? context.gc.primary : context.gc.lineStrong),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -543,7 +552,7 @@ class PillChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                color: active ? Colors.white : GColors.inkSoft,
+                color: active ? Colors.white : context.gc.inkSoft,
               ),
             ),
           ],
@@ -573,11 +582,11 @@ class EmptyState extends StatelessWidget {
           Container(
             width: 52,
             height: 52,
-            decoration: BoxDecoration(color: GColors.surfaceSoft, shape: BoxShape.circle, border: Border.all(color: GColors.line)),
-            child: Icon(icon, size: 22, color: GColors.muted),
+            decoration: BoxDecoration(color: context.gc.surfaceSoft, shape: BoxShape.circle, border: Border.all(color: context.gc.line)),
+            child: Icon(icon, size: 22, color: context.gc.muted),
           ),
           const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: GColors.ink)),
+          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.gc.ink)),
           if (desc != null) ...[
             const SizedBox(height: 5),
             ConstrainedBox(
@@ -585,7 +594,7 @@ class EmptyState extends StatelessWidget {
               child: Text(
                 desc!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12.5, color: GColors.muted, height: 1.6),
+                style: TextStyle(fontSize: 12.5, color: context.gc.muted, height: 1.6),
               ),
             ),
           ],
@@ -686,12 +695,18 @@ void toast(BuildContext context, String message, {bool error = false}) {
     ..showSnackBar(SnackBar(
       content: Row(
         children: [
-          Icon(error ? Icons.error_outline : Icons.check_circle_outline, size: 16, color: Colors.white),
+          Icon(
+            error ? Icons.error_outline : Icons.check_circle_outline,
+            size: 16,
+            color: context.gc.surface,
+          ),
           const SizedBox(width: 8),
-          Expanded(child: Text(message)),
+          Expanded(
+            child: Text(message, style: TextStyle(color: context.gc.surface)),
+          ),
         ],
       ),
-      backgroundColor: error ? GColors.danger : GColors.ink,
+      backgroundColor: error ? context.gc.danger : context.gc.ink,
       duration: const Duration(milliseconds: 2200),
     ));
 }
@@ -722,8 +737,8 @@ Future<T?> showResponsive<T>(
     backgroundColor: Colors.transparent,
     builder: (ctx) => Container(
       constraints: BoxConstraints(maxHeight: size.height * 0.95),
-      decoration: const BoxDecoration(
-        color: GColors.surface,
+      decoration: BoxDecoration(
+        color: context.gc.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: builder(ctx),
@@ -755,7 +770,7 @@ class FormScaffold extends StatelessWidget {
                   child: Text(title, style: Theme.of(context).textTheme.titleMedium),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 18, color: GColors.muted),
+                  icon: Icon(Icons.close, size: 18, color: context.gc.muted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -795,13 +810,13 @@ Future<bool> confirmDialog(
       title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
       content: Text(
         message,
-        style: const TextStyle(fontSize: 13, color: GColors.inkSoft, height: 1.6),
+        style: TextStyle(fontSize: 13, color: context.gc.inkSoft, height: 1.6),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
-          style: danger ? FilledButton.styleFrom(backgroundColor: GColors.danger) : null,
+          style: danger ? FilledButton.styleFrom(backgroundColor: context.gc.danger) : null,
           child: Text(confirmText),
         ),
       ],
@@ -826,13 +841,13 @@ class FormField2 extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.inkSoft),
+          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.inkSoft),
         ),
         const SizedBox(height: 6),
         child,
         if (hint != null) ...[
           const SizedBox(height: 4),
-          Text(hint!, style: const TextStyle(fontSize: 11, color: GColors.muted2)),
+          Text(hint!, style: TextStyle(fontSize: 11, color: context.gc.muted2)),
         ],
       ],
     );
@@ -893,9 +908,9 @@ class SelectField<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: GColors.surfaceSoft,
+        color: context.gc.surfaceSoft,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GColors.lineStrong),
+        border: Border.all(color: context.gc.lineStrong),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
@@ -904,10 +919,10 @@ class SelectField<T> extends StatelessWidget {
           onChanged: onChanged,
           hint: hint == null ? null : Text(hint!, style: const TextStyle(fontSize: 13.5)),
           isExpanded: true,
-          dropdownColor: GColors.surface,
+          dropdownColor: context.gc.surface,
           borderRadius: BorderRadius.circular(12),
-          icon: const Icon(Icons.expand_more, size: 18, color: GColors.muted),
-          style: const TextStyle(fontSize: 13.5, color: GColors.ink),
+          icon: Icon(Icons.expand_more, size: 18, color: context.gc.muted),
+          style: TextStyle(fontSize: 13.5, color: context.gc.ink),
         ),
       ),
     );

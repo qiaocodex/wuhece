@@ -157,7 +157,7 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  Widget _vLine() => Container(width: 1, color: GColors.line);
+  Widget _vLine() => Container(width: 1, color: context.gc.line);
 
   Widget _brand() {
     return Row(
@@ -167,20 +167,20 @@ class _HomeShellState extends State<HomeShell> {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: GColors.primary,
+            color: context.gc.primary,
             borderRadius: BorderRadius.circular(9),
           ),
           child: const Icon(Icons.inventory_2_outlined, size: 17, color: Colors.white),
         ),
-        const SizedBox(width: 9),
+        SizedBox(width: 9),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('物盒册', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: GColors.ink, height: 1.1)),
+          children: [
+            Text('物盒册', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: context.gc.ink, height: 1.1)),
             Text(
               'ASSET & SPACE',
-              style: TextStyle(fontSize: 8.5, letterSpacing: 1.1, color: GColors.muted2, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 8.5, letterSpacing: 1.1, color: context.gc.muted2, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -191,8 +191,8 @@ class _HomeShellState extends State<HomeShell> {
   PreferredSizeWidget _mobileAppBar(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: false,
-      backgroundColor: GColors.bg,
-      surfaceTintColor: GColors.bg,
+      backgroundColor: context.gc.bg,
+      surfaceTintColor: context.gc.bg,
       scrolledUnderElevation: 0,
       title: _brand(),
       actions: [
@@ -246,7 +246,7 @@ class _HomeShellState extends State<HomeShell> {
           count > 99 ? '99+' : '$count',
           style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, height: 1),
         ),
-        backgroundColor: GColors.danger,
+        backgroundColor: context.gc.danger,
         textColor: Colors.white,
         smallSize: 16,
         offset: const Offset(3, -3),
@@ -269,7 +269,7 @@ class _HomeShellState extends State<HomeShell> {
     final count = widget.store.getSuggestions().length;
     return Container(
       width: 224,
-      color: GColors.surface,
+      color: context.gc.surface,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,19 +299,19 @@ class _HomeShellState extends State<HomeShell> {
             ),
             const Spacer(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+              padding: EdgeInsets.fromLTRB(18, 8, 18, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Row(
                     children: [
-                      Text('本地数据', style: TextStyle(fontSize: 11.5, color: GColors.muted2)),
+                      Text('本地数据', style: TextStyle(fontSize: 11.5, color: context.gc.muted2)),
                     ],
                   ),
                   SizedBox(height: 4),
                   Text(
                     '数据保存在本机',
-                    style: TextStyle(fontSize: 11, color: GColors.muted2),
+                    style: TextStyle(fontSize: 11, color: context.gc.muted2),
                   ),
                 ],
               ),
@@ -334,7 +334,7 @@ class _SidebarLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 10.5, letterSpacing: 1.5, color: GColors.muted2, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 10.5, letterSpacing: 1.5, color: context.gc.muted2, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -353,7 +353,7 @@ class _SidebarItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       child: Material(
-        color: active ? GColors.primaryWeak : Colors.transparent,
+        color: active ? context.gc.primaryWeak : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -362,7 +362,7 @@ class _SidebarItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             child: Row(
               children: [
-                Icon(meta.icon, size: 18, color: active ? GColors.primary : GColors.inkSoft),
+                Icon(meta.icon, size: 18, color: active ? context.gc.primary : context.gc.inkSoft),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -370,15 +370,15 @@ class _SidebarItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                      color: active ? GColors.primary : GColors.inkSoft,
+                      color: active ? context.gc.primary : context.gc.inkSoft,
                     ),
                   ),
                 ),
                 if (badgeCount > 0)
                   MiniBadge(
                     label: badgeCount > 99 ? '99+' : '$badgeCount',
-                    color: GColors.danger,
-                    bg: GColors.dangerWeak,
+                    color: context.gc.danger,
+                    bg: context.gc.dangerWeak,
                   ),
               ],
             ),
@@ -403,9 +403,9 @@ class _FirstRunDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: GColors.surfaceSoft,
+            color: context.gc.surfaceSoft,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: GColors.lineStrong),
+            border: Border.all(color: context.gc.lineStrong),
           ),
           child: Row(
             children: [
@@ -413,10 +413,10 @@ class _FirstRunDialog extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: GColors.primaryWeak,
+                  color: context.gc.primaryWeak,
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(icon, size: 20, color: GColors.primary),
+                child: Icon(icon, size: 20, color: context.gc.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -427,7 +427,7 @@ class _FirstRunDialog extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: context.gc.ink),
                         ),
                         if (recommended) ...[
                           const SizedBox(width: 6),
@@ -436,12 +436,12 @@ class _FirstRunDialog extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(desc, style: const TextStyle(fontSize: 11.5, color: GColors.muted, height: 1.5)),
+                    Text(desc, style: TextStyle(fontSize: 11.5, color: context.gc.muted, height: 1.5)),
                   ],
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, size: 16, color: GColors.muted2),
+              Icon(Icons.chevron_right, size: 16, color: context.gc.muted2),
             ],
           ),
         ),
@@ -453,9 +453,9 @@ class _FirstRunDialog extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             '首次启动，选择如何开始使用：',
-            style: TextStyle(fontSize: 12.5, color: GColors.muted),
+            style: TextStyle(fontSize: 12.5, color: context.gc.muted),
           ),
           const SizedBox(height: 12),
           option(
@@ -520,7 +520,7 @@ class _ImportJsonSheetState extends State<_ImportJsonSheet> {
           Text(
             '在浏览器版「设置 → 导出完整备份」下载 JSON 文件，'
             '然后在这里选择该文件，或把文件内容粘贴到下方。',
-            style: const TextStyle(fontSize: 12, color: GColors.muted, height: 1.6),
+            style: TextStyle(fontSize: 12, color: context.gc.muted, height: 1.6),
           ),
           const SizedBox(height: 14),
           FormField2(
@@ -551,7 +551,7 @@ class _ImportJsonSheetState extends State<_ImportJsonSheet> {
           else
             Text(
               '手机端不支持直接选择文件：请把 JSON 内容复制后粘贴到上方文本框',
-              style: const TextStyle(fontSize: 11, color: GColors.muted2),
+              style: TextStyle(fontSize: 11, color: context.gc.muted2),
             ),
         ],
       ),

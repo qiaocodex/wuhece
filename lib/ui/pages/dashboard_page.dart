@@ -66,8 +66,8 @@ class DashboardPage extends StatelessWidget {
                 label: '资产总值',
                 value: money(stats.value),
                 hint: '按单价 × 数量估算',
-                iconBg: GColors.accentWeak,
-                iconColor: GColors.accent,
+                iconBg: context.gc.accentWeak,
+                iconColor: context.gc.accent,
               ),
               StatCard(
                 icon: Icons.archive_outlined,
@@ -75,16 +75,16 @@ class DashboardPage extends StatelessWidget {
                 value: '${stats.avgPct}',
                 valueSuffix: '%',
                 hint: '${stats.spaceCount} 个收纳节点 · 容量 ${stats.capacity}',
-                iconBg: GColors.blueWeak,
-                iconColor: GColors.blue,
+                iconBg: context.gc.blueWeak,
+                iconColor: context.gc.blue,
               ),
               StatCard(
                 icon: Icons.lightbulb_outlined,
                 label: '待整理提醒',
                 value: '${stats.suggestions}',
                 hint: '$idleCount 件物品处于闲置状态',
-                iconBg: GColors.amberWeak,
-                iconColor: GColors.amber,
+                iconBg: context.gc.amberWeak,
+                iconColor: context.gc.amber,
               ),
             ]),
             const SizedBox(height: kSectionGap),
@@ -214,13 +214,13 @@ class DashboardPage extends StatelessWidget {
                                   item.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: GColors.ink),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.gc.ink),
                                 ),
                                 Text(
                                   store.spacePathLabel(item.spaceId),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 11.5, color: GColors.muted),
+                                  style: TextStyle(fontSize: 11.5, color: context.gc.muted),
                                 ),
                               ],
                             ),
@@ -228,10 +228,10 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             money(item.value),
-                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right, size: 14, color: GColors.muted2),
+                          Icon(Icons.chevron_right, size: 14, color: context.gc.muted2),
                         ],
                       ),
                     ),
@@ -259,13 +259,13 @@ class DashboardPage extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: GColors.surfaceSoft,
+                      color: context.gc.surfaceSoft,
                       borderRadius: BorderRadius.circular(11),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _severityIcon(s.severity),
+                        _severityIcon(context, s.severity),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -273,12 +273,12 @@ class DashboardPage extends StatelessWidget {
                             children: [
                               Text(
                                 s.title,
-                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.ink, height: 1.5),
+                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink, height: 1.5),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 s.desc,
-                                style: const TextStyle(fontSize: 11.5, color: GColors.muted, height: 1.5),
+                                style: TextStyle(fontSize: 11.5, color: context.gc.muted, height: 1.5),
                               ),
                             ],
                           ),
@@ -291,11 +291,11 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _severityIcon(String severity) {
+  Widget _severityIcon(BuildContext context, String severity) {
     final (bg, color) = switch (severity) {
-      'high' => (GColors.dangerWeak, GColors.danger),
-      'medium' => (GColors.amberWeak, GColors.amber),
-      _ => (GColors.blueWeak, GColors.blue),
+      'high' => (context.gc.dangerWeak, context.gc.danger),
+      'medium' => (context.gc.amberWeak, context.gc.amber),
+      _ => (context.gc.blueWeak, context.gc.blue),
     };
     return Container(
       width: 28,
@@ -316,8 +316,8 @@ class DashboardPage extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12.5, color: GColors.muted)),
-          const Icon(Icons.chevron_right, size: 14, color: GColors.muted2),
+          Text(label, style: TextStyle(fontSize: 12.5, color: context.gc.muted)),
+          Icon(Icons.chevron_right, size: 14, color: context.gc.muted2),
         ],
       ),
     );

@@ -31,9 +31,9 @@ class _InsightsPageState extends State<InsightsPage> {
       };
 
   (Color, Color) _severityColors(String severity) => switch (severity) {
-        'high' => (GColors.danger, GColors.dangerWeak),
-        'medium' => (GColors.amber, GColors.amberWeak),
-        _ => (GColors.blue, GColors.blueWeak),
+        'high' => (context.gc.danger, context.gc.dangerWeak),
+        'medium' => (context.gc.amber, context.gc.amberWeak),
+        _ => (context.gc.blue, context.gc.blueWeak),
       };
 
   String _severityLabel(String severity) => switch (severity) {
@@ -139,12 +139,12 @@ class _InsightsPageState extends State<InsightsPage> {
               children: [
                 Text(
                   s.title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: GColors.ink, height: 1.5),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.gc.ink, height: 1.5),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   s.desc,
-                  style: const TextStyle(fontSize: 12, color: GColors.muted, height: 1.6),
+                  style: TextStyle(fontSize: 12, color: context.gc.muted, height: 1.6),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -178,9 +178,9 @@ class _InsightsPageState extends State<InsightsPage> {
         icon: Icon(icon, size: 13),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: danger ? GColors.danger : GColors.inkSoft,
-          side: BorderSide(color: danger ? GColors.dangerWeak : GColors.lineStrong),
-          backgroundColor: danger ? GColors.dangerWeak : GColors.surface,
+          foregroundColor: danger ? context.gc.danger : context.gc.inkSoft,
+          side: BorderSide(color: danger ? context.gc.dangerWeak : context.gc.lineStrong),
+          backgroundColor: danger ? context.gc.dangerWeak : context.gc.surface,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           minimumSize: const Size(0, 32),
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -283,7 +283,7 @@ class _InsightsPageState extends State<InsightsPage> {
                   Expanded(
                     child: Text(
                       rules[i],
-                      style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft, height: 1.7),
+                      style: TextStyle(fontSize: 12.5, color: context.gc.inkSoft, height: 1.7),
                     ),
                   ),
                 ],

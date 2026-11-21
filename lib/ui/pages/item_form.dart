@@ -241,14 +241,14 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
                   onTap: _pickDate,
                   borderRadius: BorderRadius.circular(12),
                   child: InputDecorator(
-                    decoration: const InputDecoration(
-                      suffixIcon: Icon(Icons.calendar_today_outlined, size: 16, color: GColors.muted),
+                    decoration: InputDecoration(
+                      suffixIcon: Icon(Icons.calendar_today_outlined, size: 16, color: context.gc.muted),
                     ),
                     child: Text(
                       _purchaseDate == null ? '未设置' : formatDate(_purchaseDate),
                       style: TextStyle(
                         fontSize: 13.5,
-                        color: _purchaseDate == null ? GColors.muted2 : GColors.ink,
+                        color: _purchaseDate == null ? context.gc.muted2 : context.gc.ink,
                       ),
                     ),
                   ),
@@ -294,16 +294,16 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
           width: 86,
           height: 86,
           decoration: BoxDecoration(
-            color: GColors.surfaceSoft,
+            color: context.gc.surfaceSoft,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: GColors.lineStrong),
+            border: Border.all(color: context.gc.lineStrong),
           ),
           child: _image != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(13),
-                  child: ItemThumb(image: _image, color: GColors.muted, size: 86, iconSize: 30),
+                  child: ItemThumb(image: _image, color: context.gc.muted, size: 86, iconSize: 30),
                 )
-              : const Icon(Icons.photo_camera_outlined, size: 24, color: GColors.muted2),
+              : Icon(Icons.photo_camera_outlined, size: 24, color: context.gc.muted2),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -327,9 +327,9 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '图片会压缩后保存在本地，不上传服务器',
-                style: TextStyle(fontSize: 11, color: GColors.muted2),
+                style: TextStyle(fontSize: 11, color: context.gc.muted2),
               ),
             ],
           ),

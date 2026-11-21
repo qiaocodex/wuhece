@@ -16,10 +16,20 @@ class GuiwuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final themeMode = switch (store.settings.themeMode) {
+          'light' => ThemeMode.light,
+          'dark' => ThemeMode.dark,
+          _ => ThemeMode.system,
+        };
+        return MaterialApp(
       title: '物盒册 · 个人物品资产与收纳空间管理',
       debugShowCheckedModeBanner: false,
       theme: buildGuiwuTheme(),
+      darkTheme: buildGuiwuTheme(dark: true),
+      themeMode: themeMode,
       locale: const Locale('zh', 'CN'),
       supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
       localizationsDelegates: const [
@@ -27,6 +37,8 @@ class GuiwuApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
       ],
       home: HomeShell(store: store),
+        );
+      },
     );
   }
 }

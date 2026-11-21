@@ -52,24 +52,24 @@ class SpacesPage extends StatelessWidget {
                 icon: Icons.archive_outlined,
                 label: '总容量（件）',
                 value: '$totalCapacity',
-                iconBg: GColors.blueWeak,
-                iconColor: GColors.blue,
+                iconBg: context.gc.blueWeak,
+                iconColor: context.gc.blue,
               ),
               StatCard(
                 icon: Icons.inventory_2_outlined,
                 label: '已归位物品',
                 value: '$placedCount',
                 valueSuffix: '件',
-                iconBg: GColors.amberWeak,
-                iconColor: GColors.amber,
+                iconBg: context.gc.amberWeak,
+                iconColor: context.gc.amber,
               ),
               StatCard(
                 icon: Icons.push_pin_outlined,
                 label: '尚未归位',
                 value: '${unplaced.length}',
                 valueSuffix: '件',
-                iconBg: GColors.accentWeak,
-                iconColor: GColors.accent,
+                iconBg: context.gc.accentWeak,
+                iconColor: context.gc.accent,
               ),
             ]),
             const SizedBox(height: kSectionGap),
@@ -98,10 +98,10 @@ class SpacesPage extends StatelessWidget {
               _unplacedCard(context, unplaced),
             ],
             const SizedBox(height: 20),
-            const Center(
+            Center(
               child: Text(
                 '容量仅用于估算利用率，可随时调整；收纳单元可多层嵌套。',
-                style: TextStyle(fontSize: 11.5, color: GColors.muted2),
+                style: TextStyle(fontSize: 11.5, color: context.gc.muted2),
               ),
             ),
           ],
@@ -115,7 +115,7 @@ class SpacesPage extends StatelessWidget {
     return SectionCard(
       title: '待归位物品',
       sub: '${unplaced.length} 件物品还没有指定收纳位置',
-      action: const MiniBadge(label: '待整理', color: GColors.amber, bg: GColors.amberWeak),
+      action: MiniBadge(label: '待整理', color: context.gc.amber, bg: context.gc.amberWeak),
       child: Column(
         children: [
           for (final item in unplaced)
@@ -138,13 +138,13 @@ class SpacesPage extends StatelessWidget {
                           item.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: GColors.ink),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.gc.ink),
                         ),
                         Text(
                           '${money(item.price)} · ${item.tags.join(' / ')}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, color: GColors.muted),
+                          style: TextStyle(fontSize: 11.5, color: context.gc.muted),
                         ),
                       ],
                     ),
@@ -155,7 +155,7 @@ class SpacesPage extends StatelessWidget {
                     icon: const Icon(Icons.push_pin_outlined, size: 13),
                     label: const Text('指定位置'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: GColors.surfaceSoft,
+                      backgroundColor: context.gc.surfaceSoft,
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -210,8 +210,8 @@ class _RoomCard extends StatelessWidget {
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(color: GColors.primaryWeak, borderRadius: BorderRadius.circular(11)),
-                child: const Icon(Icons.meeting_room_outlined, size: 18, color: GColors.primary),
+                decoration: BoxDecoration(color: context.gc.primaryWeak, borderRadius: BorderRadius.circular(11)),
+                child: Icon(Icons.meeting_room_outlined, size: 18, color: context.gc.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -220,9 +220,9 @@ class _RoomCard extends StatelessWidget {
                   children: [
                     Text(
                       room.name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: GColors.ink),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.gc.ink),
                     ),
-                    Text(sub, style: const TextStyle(fontSize: 12, color: GColors.muted)),
+                    Text(sub, style: TextStyle(fontSize: 12, color: context.gc.muted)),
                   ],
                 ),
               ),
@@ -245,11 +245,11 @@ class _RoomCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (children.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 2),
               child: Text(
                 '还没有收纳单元',
-                style: TextStyle(fontSize: 12, color: GColors.muted2),
+                style: TextStyle(fontSize: 12, color: context.gc.muted2),
               ),
             )
           else
@@ -265,7 +265,7 @@ class _RoomCard extends StatelessWidget {
             icon: const Icon(Icons.add, size: 14),
             label: const Text('添加区域 / 收纳单元'),
             style: TextButton.styleFrom(
-              foregroundColor: GColors.primary,
+              foregroundColor: context.gc.primary,
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
               textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
@@ -283,7 +283,7 @@ class _RoomCard extends StatelessWidget {
       child: IconButton(
         onPressed: onTap,
         icon: Icon(icon, size: 15),
-        color: danger ? GColors.danger : GColors.muted,
+        color: danger ? context.gc.danger : context.gc.muted,
         tooltip: tip,
         padding: EdgeInsets.zero,
       ),
@@ -295,10 +295,10 @@ class _RoomCard extends StatelessWidget {
     final children = store.childSpaces(space.id);
     final pct = usage.pct;
     final barColor = pct != null && pct >= 100
-        ? GColors.danger
+        ? context.gc.danger
         : pct != null && pct >= 90
-            ? GColors.amber
-            : GColors.primary;
+            ? context.gc.amber
+            : context.gc.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,16 +307,16 @@ class _RoomCard extends StatelessWidget {
           margin: EdgeInsets.only(left: depth * 18.0, bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
-            color: GColors.surfaceSoft,
+            color: context.gc.surfaceSoft,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: GColors.line),
+            border: Border.all(color: context.gc.line),
           ),
           child: Row(
             children: [
               Icon(
                 _typeIcon(space.type),
                 size: 15,
-                color: space.type == 'container' ? GColors.accent : GColors.blue,
+                color: space.type == 'container' ? context.gc.accent : context.gc.blue,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -325,7 +325,7 @@ class _RoomCard extends StatelessWidget {
                   space.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: GColors.ink),
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: context.gc.ink),
                 ),
               ),
               Expanded(
@@ -335,7 +335,7 @@ class _RoomCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: pct == null ? 0 : (pct.clamp(0, 100)) / 100,
                     minHeight: 5,
-                    backgroundColor: GColors.bgDeep,
+                    backgroundColor: context.gc.bgDeep,
                     valueColor: AlwaysStoppedAnimation(barColor),
                   ),
                 ),
@@ -343,7 +343,7 @@ class _RoomCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '${usage.count}件${pct == null ? '' : ' · $pct%'}',
-                style: const TextStyle(fontSize: 11, color: GColors.muted),
+                style: TextStyle(fontSize: 11, color: context.gc.muted),
               ),
               const SizedBox(width: 4),
               if (space.type != 'container')
@@ -368,7 +368,7 @@ class _RoomCard extends StatelessWidget {
       child: IconButton(
         onPressed: onTap,
         icon: Icon(icon, size: 13),
-        color: danger ? GColors.danger : GColors.muted,
+        color: danger ? context.gc.danger : context.gc.muted,
         padding: EdgeInsets.zero,
         iconSize: 13,
       ),

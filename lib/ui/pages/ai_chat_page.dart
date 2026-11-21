@@ -87,17 +87,17 @@ class _AiChatPageState extends State<AiChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: GColors.bg,
+      backgroundColor: context.gc.bg,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: GColors.bg,
-        surfaceTintColor: GColors.bg,
+        backgroundColor: context.gc.bg,
+        surfaceTintColor: context.gc.bg,
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('AI 助手', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: GColors.ink)),
+        title: Text('AI 助手', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: context.gc.ink)),
         actions: [
           IconButton(
             icon: const Icon(Icons.restart_alt, size: 19),
@@ -137,19 +137,19 @@ class _AiChatPageState extends State<AiChatPage> {
                   height: 56,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: GColors.primaryWeak,
+                    color: context.gc.primaryWeak,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.smart_toy_outlined, size: 30, color: GColors.primary),
+                  child: Icon(Icons.smart_toy_outlined, size: 30, color: context.gc.primary),
                 ),
                 const SizedBox(height: 14),
-                const Text(
+                Text(
                   '对话式录入物品',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: GColors.ink),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.gc.ink),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '用一句话描述，AI 帮你完成录入：\n'
                   '「今天买羽毛球拍花了 50 块，录一下」\n\n'
                   '也可以直接问：\n'
@@ -157,7 +157,7 @@ class _AiChatPageState extends State<AiChatPage> {
                   '底层基于智谱 GLM-4.5-flash（免费模型），'
                   '需要在设置里填入你自己的 API Key，'
                   'Key 仅保存在本机。',
-                  style: TextStyle(fontSize: 12.5, color: GColors.inkSoft, height: 1.8),
+                  style: TextStyle(fontSize: 12.5, color: context.gc.inkSoft, height: 1.8),
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -217,7 +217,7 @@ class _AiChatPageState extends State<AiChatPage> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: GColors.muted,
+                color: context.gc.muted,
                 letterSpacing: 2,
               ),
             ),
@@ -245,13 +245,13 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: GColors.surface,
+          color: context.gc.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: GColors.line),
+          border: Border.all(color: context.gc.line),
         ),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 13, color: GColors.inkSoft),
+          style: TextStyle(fontSize: 13, color: context.gc.inkSoft),
         ),
       ),
     );
@@ -262,15 +262,15 @@ class _AiChatPageState extends State<AiChatPage> {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(GColors.primary)),
+            child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(context.gc.primary)),
           ),
           const SizedBox(width: 10),
           Text(
             '正在思考 / 执行录入…',
-            style: TextStyle(fontSize: 12, color: GColors.muted),
+            style: TextStyle(fontSize: 12, color: context.gc.muted),
           ),
         ],
       ),
@@ -286,19 +286,19 @@ class _AiChatPageState extends State<AiChatPage> {
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
         decoration: BoxDecoration(
-          color: isUser ? GColors.primary : GColors.surface,
+          color: isUser ? context.gc.primary : context.gc.surface,
           borderRadius: BorderRadius.circular(14).copyWith(
             bottomRight: isUser ? const Radius.circular(4) : null,
             bottomLeft: !isUser ? const Radius.circular(4) : null,
           ),
-          border: isUser ? null : Border.all(color: GColors.line),
+          border: isUser ? null : Border.all(color: context.gc.line),
         ),
         child: SelectableText(
           bubble.text,
           style: TextStyle(
             fontSize: 13.5,
             height: 1.6,
-            color: isUser ? Colors.white : (bubble.isError ? GColors.danger : GColors.ink),
+            color: isUser ? Colors.white : (bubble.isError ? context.gc.danger : context.gc.ink),
           ),
         ),
       ),

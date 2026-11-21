@@ -67,7 +67,7 @@ class _ItemDetailBody extends StatelessWidget {
             Expanded(
               child: Text(
                 item.name,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: GColors.ink),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: context.gc.ink),
               ),
             ),
             const SizedBox(width: 8),
@@ -77,19 +77,19 @@ class _ItemDetailBody extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '$catName · ${store.spacePathLabel(item.spaceId)}',
-          style: const TextStyle(fontSize: 12.5, color: GColors.muted),
+          style: TextStyle(fontSize: 12.5, color: context.gc.muted),
         ),
         const SizedBox(height: 14),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            _metaCell('数量', '${item.quantity} 件'),
-            _metaCell('单价 / 总价值', '${money(item.price)} / ${money(item.value)}'),
-            _metaCell('购入日期', formatDate(item.purchaseDate)),
-            _metaCell('保修截止', end != null ? formatDate(end) : '无保修信息'),
-            _metaCell('最近使用', lastDays == 0 ? '今天' : '$lastDays 天前'),
-            _metaCell('录入时间', formatDate(item.createdAt)),
+            _metaCell(context, '数量', '${item.quantity} 件'),
+            _metaCell(context, '单价 / 总价值', '${money(item.price)} / ${money(item.value)}'),
+            _metaCell(context, '购入日期', formatDate(item.purchaseDate)),
+            _metaCell(context, '保修截止', end != null ? formatDate(end) : '无保修信息'),
+            _metaCell(context, '最近使用', lastDays == 0 ? '今天' : '$lastDays 天前'),
+            _metaCell(context, '录入时间', formatDate(item.createdAt)),
           ],
         ),
         if (item.tags.isNotEmpty) ...[
@@ -104,19 +104,19 @@ class _ItemDetailBody extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             item.note,
-            style: const TextStyle(fontSize: 13, color: GColors.inkSoft, height: 1.7),
+            style: TextStyle(fontSize: 13, color: context.gc.inkSoft, height: 1.7),
           ),
         ],
         const SizedBox(height: 14),
         const _SectionLabel('使用记录'),
         const SizedBox(height: 6),
         if (logs.isEmpty)
-          const Text(
+          Text(
             '还没有使用记录，记录一次可以帮助你判断物品的真实使用频率。',
-            style: TextStyle(fontSize: 12.5, color: GColors.muted),
+            style: TextStyle(fontSize: 12.5, color: context.gc.muted),
           )
         else
-          for (final log in logs) _logRow(log, logLabel[log.type] ?? '记录'),
+          for (final log in logs) _logRow(context, log, logLabel[log.type] ?? '记录'),
         const SizedBox(height: 8),
       ],
     );
@@ -135,36 +135,36 @@ class _ItemDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _metaCell(String label, String value) {
+  Widget _metaCell(BuildContext context, String label, String value) {
     return Container(
       width: 236,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: GColors.surfaceSoft,
+        color: context.gc.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: GColors.line),
+        border: Border.all(color: context.gc.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: GColors.muted)),
+          Text(label, style: TextStyle(fontSize: 11, color: context.gc.muted)),
           const SizedBox(height: 2),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: GColors.ink),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.gc.ink),
           ),
         ],
       ),
     );
   }
 
-  Widget _logRow(UsageLog log, String label) {
+  Widget _logRow(BuildContext context, UsageLog log, String label) {
     final dotColor = switch (log.type) {
-      'lend' => GColors.blue,
-      'return' => GColors.amber,
-      _ => GColors.primary,
+      'lend' => context.gc.blue,
+      'return' => context.gc.amber,
+      _ => context.gc.primary,
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
@@ -172,19 +172,19 @@ class _ItemDetailBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 5),
+            padding: EdgeInsets.only(top: 5),
             child: Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   log.note.isEmpty ? label : '$label · ${log.note}',
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: GColors.ink),
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: context.gc.ink),
                 ),
-                Text(formatDateTime(log.at), style: const TextStyle(fontSize: 11, color: GColors.muted2)),
+                Text(formatDateTime(log.at), style: TextStyle(fontSize: 11, color: context.gc.muted2)),
               ],
             ),
           ),
@@ -230,8 +230,8 @@ class _ItemDetailBody extends StatelessWidget {
       ),
       OutlinedButton(
         style: OutlinedButton.styleFrom(
-          foregroundColor: GColors.danger,
-          side: const BorderSide(color: GColors.dangerWeak),
+          foregroundColor: context.gc.danger,
+          side: BorderSide(color: context.gc.dangerWeak),
         ),
         onPressed: () async {
           final ok = await confirmDialog(
@@ -261,7 +261,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: GColors.ink),
+      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.gc.ink),
     );
   }
 }

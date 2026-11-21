@@ -98,7 +98,7 @@ class _CategoryFormBodyState extends State<_CategoryFormBody> {
                         color: hexToColor(c),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _color == c ? GColors.ink : Colors.transparent,
+                          color: _color == c ? context.gc.ink : Colors.transparent,
                           width: 2,
                         ),
                       ),

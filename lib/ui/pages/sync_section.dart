@@ -223,11 +223,11 @@ class _SyncSectionState extends State<_SyncSection> {
       title: '云同步',
       sub: '多设备数据同步（WebDAV：坚果云 / 群晖 / 绿联 / Nextcloud）',
       action: _lastSyncAt.isEmpty
-          ? const MiniBadge(label: '未同步', color: GColors.muted, bg: GColors.bgDeep)
+          ? MiniBadge(label: '未同步', color: context.gc.muted, bg: context.gc.bgDeep)
           : MiniBadge(
               label: '同步于 ${formatDate(_lastSyncAt)}',
-              color: GColors.primary,
-              bg: GColors.primaryWeak,
+              color: context.gc.primary,
+              bg: context.gc.primaryWeak,
             ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

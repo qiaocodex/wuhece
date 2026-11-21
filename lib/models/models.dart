@@ -228,6 +228,7 @@ class AppSettings {
     this.owner = '我',
     this.aiApiKey,
     this.aiModel = 'glm-4.5-flash',
+    this.themeMode = 'system',
   });
 
   int idleDays;
@@ -238,12 +239,16 @@ class AppSettings {
   String? aiApiKey;
   String aiModel;
 
+  /// 深色模式：system / light / dark
+  String themeMode;
+
   factory AppSettings.fromJson(Map<String, dynamic>? json) => AppSettings(
         idleDays: (json?['idleDays'] as num? ?? 90).toInt(),
         currency: json?['currency'] as String? ?? '¥',
         owner: json?['owner'] as String? ?? '我',
         aiApiKey: json?['aiApiKey'] as String?,
         aiModel: json?['aiModel'] as String? ?? 'glm-4.5-flash',
+        themeMode: json?['themeMode'] as String? ?? 'system',
       );
 
   Map<String, dynamic> toJson() => {
@@ -252,6 +257,7 @@ class AppSettings {
         'owner': owner,
         'aiApiKey': aiApiKey,
         'aiModel': aiModel,
+        'themeMode': themeMode,
       };
 }
 
