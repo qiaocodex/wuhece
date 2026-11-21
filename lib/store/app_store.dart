@@ -52,6 +52,9 @@ class AppStore extends ChangeNotifier {
 
   final SharedPreferences _prefs;
 
+  /// 偏好存储访问（搜索历史 / 同步配置等轻量键值用）
+  SharedPreferences get prefs => _prefs;
+
   static const storageKey = 'guiwu.data.v2';
   static const welcomeKey = 'guiwu.seen-welcome';
 

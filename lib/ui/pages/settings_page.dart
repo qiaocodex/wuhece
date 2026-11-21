@@ -10,10 +10,15 @@ import '../../services/file_io.dart' as file_io;
 import '../../services/format.dart';
 import '../../services/glm_chat.dart';
 import '../../services/id.dart';
+import '../../services/sync/sync_backend.dart';
+import '../../services/sync/sync_service.dart';
+import '../../services/sync/webdav_backend.dart';
 import '../../store/app_store.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'category_form.dart';
+
+part 'sync_section.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -42,6 +47,8 @@ class SettingsPage extends StatelessWidget {
           context,
           children: [
             const PageHeader(title: '设置', sub: '数据备份、分类管理与使用偏好'),
+            const _SyncSection(),
+            const SizedBox(height: kSectionGap),
             _dataSection(context),
             const SizedBox(height: kSectionGap),
             const _AiSection(),

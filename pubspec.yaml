@@ -2,7 +2,7 @@ name: guiwu
 description: "物盒册 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.1.0+5
+version: 1.2.0+6
 
 environment:
   sdk: ^3.14.0
@@ -26,6 +26,7 @@ dependencies:
   # HTTP 客户端（AI 对话直连智谱开放平台）
   http: ^1.2.0
   material_ui: ^1.11.1
+  webdav_client_plus: ^3.0.0
 
 dev_dependencies:
   flutter_test:
