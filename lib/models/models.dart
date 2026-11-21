@@ -220,21 +220,39 @@ class Category {
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'color': color};
 }
 
-/// 使用偏好（对应 Web 版 DEFAULT_SETTINGS）
+/// 使用偏好（对应 Web 版 DEFAULT_SETTINGS；ai 字段为本应用扩展，Web 版导入时缺省）
 class AppSettings {
-  AppSettings({this.idleDays = 90, this.currency = '¥', this.owner = '我'});
+  AppSettings({
+    this.idleDays = 90,
+    this.currency = '¥',
+    this.owner = '我',
+    this.aiApiKey,
+    this.aiModel = 'glm-4.5-flash',
+  });
 
   int idleDays;
   String currency;
   String owner;
 
+  /// AI 对话（智谱开放平台）：key 仅存本机，随备份导出（含敏感信息，注意保管）
+  String? aiApiKey;
+  String aiModel;
+
   factory AppSettings.fromJson(Map<String, dynamic>? json) => AppSettings(
         idleDays: (json?['idleDays'] as num? ?? 90).toInt(),
         currency: json?['currency'] as String? ?? '¥',
         owner: json?['owner'] as String? ?? '我',
+        aiApiKey: json?['aiApiKey'] as String?,
+        aiModel: json?['aiModel'] as String? ?? 'glm-4.5-flash',
       );
 
-  Map<String, dynamic> toJson() => {'idleDays': idleDays, 'currency': currency, 'owner': owner};
+  Map<String, dynamic> toJson() => {
+        'idleDays': idleDays,
+        'currency': currency,
+        'owner': owner,
+        'aiApiKey': aiApiKey,
+        'aiModel': aiModel,
+      };
 }
 
 /// 分类统计行

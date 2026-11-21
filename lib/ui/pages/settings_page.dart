@@ -8,6 +8,7 @@ import '../../services/csv.dart';
 import '../../services/dates.dart';
 import '../../services/file_io.dart' as file_io;
 import '../../services/format.dart';
+import '../../services/glm_chat.dart';
 import '../../services/id.dart';
 import '../../store/app_store.dart';
 import '../theme.dart';
@@ -42,6 +43,8 @@ class SettingsPage extends StatelessWidget {
           children: [
             const PageHeader(title: '设置', sub: '数据备份、分类管理与使用偏好'),
             _dataSection(context),
+            const SizedBox(height: kSectionGap),
+            const _AiSection(),
             const SizedBox(height: kSectionGap),
             _categorySection(context),
             const SizedBox(height: kSectionGap),
@@ -421,6 +424,129 @@ class SettingsPage extends StatelessWidget {
           Text(
             '物品 ${store.items.length} 条 · 空间 ${store.spaces.length} 个 · 分类 ${store.categories.length} 个 · ${formatDate(toISODate())}',
             style: const TextStyle(fontSize: 11.5, color: GColors.muted2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ------------------------- AI 助手 ------------------------- */
+
+class _AiSection extends StatefulWidget {
+  const _AiSection();
+
+  @override
+  State<_AiSection> createState() => _AiSectionState();
+}
+
+class _AiSectionState extends State<_AiSection> {
+  late final TextEditingController _keyCtrl;
+  late String _model;
+  bool _testing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = AppStore.instance.settings;
+    _keyCtrl = TextEditingController(text: settings.aiApiKey ?? '');
+    _model = settings.aiModel;
+  }
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    AppStore.instance.updateSettings(aiApiKey: _keyCtrl.text.trim(), aiModel: _model);
+    toast(context, 'AI 配置已保存');
+  }
+
+  Future<void> _test() async {
+    if (_testing) return;
+    final key = _keyCtrl.text.trim();
+    if (key.isEmpty) {
+      toast(context, '请先填写 API Key', error: true);
+      return;
+    }
+    setState(() => _testing = true);
+    try {
+      await GlmChatService.probe(apiKey: key, model: _model);
+      if (mounted) toast(context, '连接成功，可以开始对话录入');
+    } on GlmException catch (err) {
+      if (mounted) toast(context, err.message, error: true);
+    } catch (err) {
+      if (mounted) toast(context, '测试失败：$err', error: true);
+    } finally {
+      if (mounted) setState(() => _testing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'AI 助手',
+      sub: '自然语言对话录入物品（智谱 GLM）',
+      action: const MiniBadge(label: 'Beta', color: GColors.accent, bg: GColors.accentWeak),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FormField2(
+            label: 'API Key',
+            child: TextField(
+              controller: _keyCtrl,
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: const InputDecoration(hintText: '粘贴智谱开放平台的 API Key'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FormField2(
+            label: '模型',
+            child: SelectField<String>(
+              value: _model,
+              items: [
+                for (final m in GlmChatService.knownModels)
+                  DropdownMenuItem(
+                    value: m,
+                    child: Text('$m${m == GlmChatService.defaultModel ? '（免费）' : ''}'),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _model = v ?? _model),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.save_outlined, size: 14),
+                label: const Text('保存配置'),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: _testing ? null : _test,
+                icon: _testing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.wifi_tethering_outlined, size: 14),
+                label: const Text('测试连接'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '在 open.bigmodel.cn（智谱开放平台）注册后，于「API Keys」页面创建 Key；'
+            'glm-4.5-flash 为免费模型。Key 仅保存在本机，请求由设备直连智谱，'
+            '对话内容用于解析录入指令。Web 端可能受浏览器跨域策略限制，'
+            '建议在桌面 / 移动端使用 AI 对话。',
+            style: TextStyle(fontSize: 11, color: GColors.muted2, height: 1.6),
           ),
         ],
       ),

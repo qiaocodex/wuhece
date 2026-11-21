@@ -402,11 +402,42 @@ class AppStore extends ChangeNotifier {
 
   /* ------------------------- 偏好 ------------------------- */
 
-  void updateSettings({int? idleDays, String? currency, String? owner}) {
+  void updateSettings({
+    int? idleDays,
+    String? currency,
+    String? owner,
+    String? aiApiKey,
+    String? aiModel,
+  }) {
     if (idleDays != null) settings.idleDays = idleDays;
     if (currency != null) settings.currency = currency;
     if (owner != null) settings.owner = owner;
+    if (aiApiKey != null) settings.aiApiKey = aiApiKey.isEmpty ? null : aiApiKey;
+    if (aiModel != null) settings.aiModel = aiModel;
     _commit();
+  }
+
+  /* ------------------------- 搜索历史 ------------------------- */
+
+  static const _searchHistoryKey = 'guiwu.search-history';
+
+  List<String> searchHistory() {
+    return List<String>.of(_prefs.getStringList(_searchHistoryKey) ?? const []);
+  }
+
+  /// 记录一次搜索（去重、最新在前、最多 10 条）
+  void addSearchHistory(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    final list = searchHistory()
+      ..remove(q)
+      ..insert(0, q);
+    if (list.length > 10) list.removeRange(10, list.length);
+    _prefs.setStringList(_searchHistoryKey, list);
+  }
+
+  void clearSearchHistory() {
+    _prefs.remove(_searchHistoryKey);
   }
 
   /* ------------------------- 统计 ------------------------- */

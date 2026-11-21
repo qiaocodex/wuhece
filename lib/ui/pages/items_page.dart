@@ -31,7 +31,9 @@ class ItemsPageState extends State<ItemsPage> {
   String _status = 'all';
   String _sort = 'recent';
   bool _gridView = true;
+  bool _searchFocused = false;
   final _searchCtrl = TextEditingController();
+  final _searchFocus = FocusNode();
 
   /// 供外壳调用（如「查看同类物品」直接带词搜索）
   void applySearch(String query) {
@@ -41,11 +43,21 @@ class ItemsPageState extends State<ItemsPage> {
       _status = 'all';
       _searchCtrl.text = query;
     });
+    AppStore.instance.addSearchHistory(query);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocus.addListener(() {
+      if (mounted) setState(() => _searchFocused = _searchFocus.hasFocus);
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -114,7 +126,12 @@ class ItemsPageState extends State<ItemsPage> {
             Expanded(
               child: TextField(
                 controller: _searchCtrl,
+                focusNode: _searchFocus,
                 onChanged: (v) => setState(() => _q = v),
+                onSubmitted: (v) {
+                  AppStore.instance.addSearchHistory(v);
+                  _searchFocus.unfocus();
+                },
                 decoration: InputDecoration(
                   hintText: '搜索名称、标签、位置或备注',
                   prefixIcon: const Icon(Icons.search, size: 18, color: GColors.muted),
@@ -136,6 +153,7 @@ class ItemsPageState extends State<ItemsPage> {
           ],
         ),
         const SizedBox(height: 10),
+        if (_searchFocused && _q.isEmpty) _searchHistory(),
         Row(
           children: [
             Expanded(
@@ -165,6 +183,64 @@ class ItemsPageState extends State<ItemsPage> {
           ],
         ),
       ],
+    );
+  }
+
+  /// 搜索历史（仅聚焦且输入为空时显示）
+  Widget _searchHistory() {
+    final history = AppStore.instance.searchHistory();
+    if (history.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: GColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: GColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('最近搜索', style: TextStyle(fontSize: 11.5, color: GColors.muted2)),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  AppStore.instance.clearSearchHistory();
+                  setState(() {});
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('清空', style: TextStyle(fontSize: 11.5, color: GColors.muted)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final q in history)
+                PillChip(
+                  label: q,
+                  active: false,
+                  onTap: () {
+                    _searchCtrl.text = q;
+                    setState(() {
+                      _q = q;
+                      _category = 'all';
+                      _status = 'all';
+                    });
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

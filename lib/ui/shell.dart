@@ -3,9 +3,11 @@ library;
 
 import 'package:material_ui/material_ui.dart';
 
+import '../services/file_io.dart' as file_io;
 import '../store/app_store.dart';
 import '../ui/theme.dart';
 import '../ui/widgets.dart';
+import 'pages/ai_chat_page.dart';
 import 'pages/analytics_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/insights_page.dart';
@@ -58,7 +60,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
-  bool _welcomeShown = false;
+  bool _firstRunHandled = false;
   final GlobalKey<ItemsPageState> _itemsKey = GlobalKey();
 
   List<Widget> _pages(GlobalKey<ItemsPageState> itemsKey) => [
@@ -83,21 +85,58 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  void _maybeShowWelcome() {
-    if (_welcomeShown) return;
-    _welcomeShown = true;
+  void _openAiChat() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const AiChatPage()),
+    );
+  }
+
+  /// 首次启动：三选一（示例数据 / 从 Web 版导入 / 空白开始）
+  void _maybeFirstRun() {
+    if (_firstRunHandled) return;
+    _firstRunHandled = true;
     final store = widget.store;
-    if (!store.seenWelcome && store.items.isNotEmpty) {
+    if (store.seenWelcome) return;
+
+    showResponsive<String>(
+      context,
+      builder: (_) => const _FirstRunDialog(),
+    ).then((choice) {
+      switch (choice) {
+        case 'import':
+          _showImportSheet();
+        case 'blank':
+          store.clearAll();
+          if (mounted) toast(context, '已切换为空白物品库，开始录入吧');
+        default:
+          if (mounted) toast(context, '示例数据已就绪，点开物品看看吧');
+      }
       store.markWelcomeSeen();
-      Future<void>.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) toast(context, '示例数据已就绪，点开物品看看吧');
-      });
+    });
+  }
+
+  Future<void> _showImportSheet() async {
+    final content = await showResponsive<String>(
+      context,
+      builder: (_) => const _ImportJsonSheet(),
+    );
+    if (content == null || !mounted) return;
+    try {
+      widget.store.importJson(content);
+      toast(context, '导入成功，欢迎使用物盒册');
+    } catch (err) {
+      toast(
+        context,
+        err is FormatException ? '导入失败：${err.message}' : '导入失败：文件内容无法解析',
+        error: true,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWelcome());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeFirstRun());
 
     final wide = isWide(context);
     final body = IndexedStack(index: _index, children: _pages(_itemsKey));
@@ -157,6 +196,11 @@ class _HomeShellState extends State<HomeShell> {
       scrolledUnderElevation: 0,
       title: _brand(),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.smart_toy_outlined, size: 20),
+          tooltip: 'AI 助手',
+          onPressed: _openAiChat,
+        ),
         IconButton(
           icon: const Icon(Icons.settings_outlined, size: 20),
           tooltip: '设置',
@@ -243,6 +287,11 @@ class _HomeShellState extends State<HomeShell> {
                 onTap: () => _go(i),
               ),
             const _SidebarLabel('管理'),
+            _SidebarItem(
+              meta: const _TabMeta('AI 助手', Icons.smart_toy_outlined),
+              active: false,
+              onTap: _openAiChat,
+            ),
             _SidebarItem(
               meta: const _TabMeta('设置', Icons.settings_outlined),
               active: false,
@@ -335,6 +384,176 @@ class _SidebarItem extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/* ------------------------- 首次启动引导 ------------------------- */
+
+class _FirstRunDialog extends StatelessWidget {
+  const _FirstRunDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget option(IconData icon, String title, String desc, String value, {bool recommended = false}) {
+      return InkWell(
+        onTap: () => Navigator.pop(context, value),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: GColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: GColors.lineStrong),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: GColors.primaryWeak,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, size: 20, color: GColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: GColors.ink),
+                        ),
+                        if (recommended) ...[
+                          const SizedBox(width: 6),
+                          const MiniBadge(label: '推荐'),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(desc, style: const TextStyle(fontSize: 11.5, color: GColors.muted, height: 1.5)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right, size: 16, color: GColors.muted2),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return FormScaffold(
+      title: '欢迎使用物盒册',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            '首次启动，选择如何开始使用：',
+            style: TextStyle(fontSize: 12.5, color: GColors.muted),
+          ),
+          const SizedBox(height: 12),
+          option(
+            Icons.inventory_2_outlined,
+            '载入示例数据',
+            '预置 29 件物品演示，先体验全部功能',
+            'demo',
+            recommended: true,
+          ),
+          const SizedBox(height: 10),
+          option(
+            Icons.upload_outlined,
+            '从 Web 版导入',
+            '已在浏览器版录入了数据？导入 JSON 备份',
+            'import',
+          ),
+          const SizedBox(height: 10),
+          option(
+            Icons.add_circle_outline,
+            '空白开始',
+            '不需要示例数据，从零开始记录',
+            'blank',
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImportJsonSheet extends StatefulWidget {
+  const _ImportJsonSheet();
+
+  @override
+  State<_ImportJsonSheet> createState() => _ImportJsonSheetState();
+}
+
+class _ImportJsonSheetState extends State<_ImportJsonSheet> {
+  final _contentCtrl = TextEditingController();
+  bool _filePickSupported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _filePickSupported = file_io.filePickSupported;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FormScaffold(
+      title: '从 Web 版导入备份',
+      actions: [
+        OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _contentCtrl.text),
+          child: const Text('导入'),
+        ),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '在浏览器版「设置 → 导出完整备份」下载 JSON 文件，'
+            '然后在这里选择该文件，或把文件内容粘贴到下方。',
+            style: const TextStyle(fontSize: 12, color: GColors.muted, height: 1.6),
+          ),
+          const SizedBox(height: 14),
+          FormField2(
+            label: '备份 JSON 内容',
+            child: TextField(
+              controller: _contentCtrl,
+              maxLines: 8,
+              minLines: 6,
+              decoration: const InputDecoration(hintText: '粘贴 JSON 备份内容，或点击下方按钮选择文件'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_filePickSupported)
+            OutlinedButton.icon(
+              onPressed: () async {
+                final content = await file_io.pickTextFileContent(
+                  label: 'JSON 备份',
+                  extensions: ['json'],
+                  mime: 'application/json',
+                );
+                if (content != null) {
+                  setState(() => _contentCtrl.text = content);
+                }
+              },
+              icon: const Icon(Icons.folder_open_outlined, size: 14),
+              label: const Text('选择备份文件'),
+            )
+          else
+            Text(
+              '手机端不支持直接选择文件：请把 JSON 内容复制后粘贴到上方文本框',
+              style: const TextStyle(fontSize: 11, color: GColors.muted2),
+            ),
+        ],
       ),
     );
   }
