@@ -50,12 +50,12 @@ jobs:
           flutter build apk --release
 
       - name: 重命名产物
-        run: cp build/app/outputs/flutter-apk/app-release.apk "guiwu-${{ github.ref_name }}-android.apk"
+        run: cp build/app/outputs/flutter-apk/app-release.apk "wuhece-${{ github.ref_name }}-android.apk"
 
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: guiwu-*-android.apk
+          path: wuhece-*-android.apk
           if-no-files-found: error
 
   web:
@@ -79,12 +79,12 @@ jobs:
       - name: 打包（index.html 置于压缩包根目录，解压即可托管）
         run: |
           cd build/web
-          zip -qr "../../guiwu-${{ github.ref_name }}-web.zip" .
+          zip -qr "../../wuhece-${{ github.ref_name }}-web.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
           name: web-zip
-          path: guiwu-*-web.zip
+          path: wuhece-*-web.zip
           if-no-files-found: error
 
   windows:
@@ -107,12 +107,12 @@ jobs:
 
       - name: 打包 Release 目录
         shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "guiwu-${{ github.ref_name }}-windows.zip"
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "wuhece-${{ github.ref_name }}-windows.zip"
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows-zip
-          path: guiwu-*-windows.zip
+          path: wuhece-*-windows.zip
           if-no-files-found: error
 
   release:
@@ -132,7 +132,7 @@ jobs:
           ' CHANGELOG.md > release_body.md
           if [ ! -s release_body.md ]; then
             echo "CHANGELOG.md 中没有找到 [${VERSION}] 段落，使用默认说明" >&2
-            echo "归物 ${GITHUB_REF_NAME} 发布" > release_body.md
+            echo "物盒册 ${GITHUB_REF_NAME} 发布" > release_body.md
           fi
           cat release_body.md
 

@@ -138,7 +138,7 @@ class _HomeShellState extends State<HomeShell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Text('归物', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: GColors.ink, height: 1.1)),
+            Text('物盒册', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: GColors.ink, height: 1.1)),
             Text(
               'ASSET & SPACE',
               style: TextStyle(fontSize: 8.5, letterSpacing: 1.1, color: GColors.muted2, fontWeight: FontWeight.w600),

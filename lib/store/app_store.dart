@@ -107,6 +107,9 @@ class AppStore extends ChangeNotifier {
       };
 
   /// 导出完整备份（与 Web 版字段一致）
+  ///
+  /// 注意：'app': 'guiwu' 与存储键 [storageKey] 是数据互通的兼容标识，
+  /// 应用更名为「物盒册」后仍保持不变，请勿随显示名修改。
   String exportJson() {
     final encoder = JsonEncoder.withIndent('  ');
     return encoder.convert({

@@ -1,8 +1,8 @@
 name: guiwu
-description: "归物 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
+description: "物盒册 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.14.0

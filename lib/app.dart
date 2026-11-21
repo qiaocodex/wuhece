@@ -17,7 +17,7 @@ class GuiwuApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '归物 · 让每件物品都有归处',
+      title: '物盒册 · 个人物品资产与收纳空间管理',
       debugShowCheckedModeBanner: false,
       theme: buildGuiwuTheme(),
       locale: const Locale('zh', 'CN'),

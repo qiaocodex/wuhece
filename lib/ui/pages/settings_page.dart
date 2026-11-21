@@ -404,14 +404,14 @@ class SettingsPage extends StatelessWidget {
   Widget _aboutSection(BuildContext context) {
     final store = AppStore.instance;
     return SectionCard(
-      title: '关于归物',
+      title: '关于物盒册',
       sub: '个人物品资产与收纳空间管理',
       action: const MiniBadge(label: 'Flutter 1.0'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '归物帮助你盘点个人资产、规划收纳空间，并根据使用频率给出整理建议。'
+            '物盒册帮助你盘点个人资产、规划收纳空间，并根据使用频率给出整理建议。'
             '应用完全离线运行，数据仅保存在本机，不会上传到任何服务器。'
             '支持 Android / iOS / Web / Windows / macOS 五端，数据格式与 Web 版互通，建议定期导出 JSON 备份。',
             style: TextStyle(fontSize: 12.5, color: GColors.muted, height: 1.8),

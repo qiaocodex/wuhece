@@ -1,6 +1,6 @@
 {
-    "name": "guiwu",
-    "short_name": "guiwu",
+    "name": "物盒册",
+    "short_name": "物盒册",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#2E6B5E",

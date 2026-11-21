@@ -4,6 +4,15 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/)，版本号遵循语义化版本（SemVer），
 与 `pubspec.yaml` 的 `version` 保持一致。
 
+## [1.0.3] - 2026-11-21
+
+### 更名
+
+- 应用由「归物」更名为「**物盒册**」（原名重名），五端显示名（Android / iOS / Web / Windows / macOS）与应用内品牌同步更新
+- GitHub 仓库同步更名为 `wuhece`，Release 构建产物文件名前缀由 `guiwu-` 改为 `wuhece-`
+- **数据完全兼容**：存储键仍为 `guiwu.data.v2`，JSON 备份标识与字段不变，历史备份与 Web 版互通不受影响
+- 新增 `docs/FEATURES.md` 功能基线文档，作为后续迭代的功能清单
+
 ## [1.0.2] - 2026-11-19
 
 ### 体验优化

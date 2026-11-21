@@ -1,12 +1,15 @@
-# 归物 · 让每件物品都有归处
+# 物盒册 · 个人物品资产与收纳空间管理
 
-个人物品资产与收纳空间管理应用。由 Web 单页版（`D:\traeproject\zichanguanli`）重构而来的 **Flutter 四端应用**：
+> 原项目名「归物」，因重名已于 2026-11 更名为「物盒册」；
+> 包名（`guiwu`）、存储键（`guiwu.data.v2`）与备份标识为兼容性内部标识，保持不变。
+
+由 Web 单页版（`D:\traeproject\zichanguanli`）重构而来的 **Flutter 四端应用**：
 
 - 📱 Android / iOS（`flutter run` / Android Studio）
 - 🌐 Web（`flutter run -d chrome`）
 - 🖥️ Windows / macOS（VS 2022 / Xcode 工具链）
 
-数据完全离线保存在本机，不上传服务器。
+数据完全离线保存在本机，不上传服务器。现有功能详见 [docs/FEATURES.md](docs/FEATURES.md)。
 
 ## 运行
 
@@ -24,30 +27,11 @@ flutter build windows         # Windows 可执行程序 → build/windows/x64/ru
 > 国内环境已配置镜像：`PUB_HOSTED_URL=pub.flutter-io.cn`、`FLUTTER_STORAGE_BASE_URL=storage.flutter-io.cn`；
 > Android gradle wrapper 已指向华为云镜像（`android/gradle/wrapper/gradle-wrapper.properties`）。
 
-## 版本迭代与发布流程
-
-1. **改代码** → 跑 `flutter analyze && flutter test`（推送后 CI 也会自动跑）
-2. **升版本**：`pubspec.yaml` 的 `version: 1.1.0+2`（+号后是构建号，每次发布 +1）
-3. **写说明**：在 `CHANGELOG.md` 顶部按格式加一节 `## [1.1.0] - 2026-XX-XX`
-4. **提交并打标签**：
-   ```bash
-   git add -A && git commit -m "feat: xxx"
-   git tag v1.1.0
-   git push origin main v1.1.0
-   ```
-5. **自动发布**：GitHub Actions 会校验标签与 pubspec 版本一致，三平台并行构建
-   （Android APK / Web zip / Windows zip），并从 `CHANGELOG.md` 提取对应段落
-   自动创建 GitHub Release 并附加构建产物（版本说明与下载包全自动，无需手动填）。
-
-CI（`ci.yml`）在每次推送 main / PR 时自动运行 analyze + test；
-Release（`release.yml`）在推送 `v*` 标签时自动三平台构建并发布。
-macOS 产物因需签名公证暂不在流水线内，可本地 `flutter build macos`。
-
 ## 架构
 
 ```
 lib/
-├── main.dart                  # 入口：初始化持久化与全局 Store
+├── main.dart                  # 入口：持久化初始化、发布包异常可视化
 ├── app.dart                   # MaterialApp、中文本地化、主题
 ├── models/models.dart         # Item / Space / Category / AppSettings
 │                              #   字段与 Web 版 guiwu.data.v2 JSON Schema 一致
@@ -69,7 +53,26 @@ lib/
 **状态管理**：零第三方依赖，`AppStore extends ChangeNotifier` + `ListenableBuilder`。
 
 **持久化**：`shared_preferences`（键 `guiwu.data.v2`），JSON 结构与 Web 版完全一致 ——
-**Web 版导出的 JSON 备份可直接导入本 App，反之亦然。**
+**Web 版导出的 JSON 备份可直接导入本应用，反之亦然。**
+
+## 版本迭代与发布流程
+
+1. **改代码** → 跑 `flutter analyze && flutter test`（推送后 CI 也会自动跑）
+2. **升版本**：`pubspec.yaml` 的 `version: 1.1.0+2`（+号后是构建号，每次发布 +1）
+3. **写说明**：在 `CHANGELOG.md` 顶部按格式加一节 `## [1.1.0] - 2026-XX-XX`
+4. **提交并打标签**：
+   ```bash
+   git add -A && git commit -m "feat: xxx"
+   git tag v1.1.0
+   git push origin main v1.1.0
+   ```
+5. **自动发布**：GitHub Actions 会校验标签与 pubspec 版本一致，三平台并行构建
+   （Android APK / Web zip / Windows zip），并从 `CHANGELOG.md` 提取对应段落
+   自动创建 GitHub Release 并附加构建产物（版本说明与下载包全自动，无需手动填）。
+
+CI（`ci.yml`）在每次推送 main / PR 时自动运行 analyze + test；
+Release（`release.yml`）在推送 `v*` 标签时自动三平台构建并发布。
+macOS 产物因需签名公证暂不在流水线内，可本地 `flutter build macos`。
 
 ## 平台能力矩阵
 
@@ -83,18 +86,10 @@ lib/
 
 \* `file_selector` 尚不支持 Android，手机端导入请在 Web / 桌面端完成（界面有提示）。
 
-## 与 Web 版的功能对照
-
-- ✅ 总览：统计卡、空间利用率、分类环形图、最近添加、整理提醒
-- ✅ 物品库：搜索 / 状态筛选 / 排序 / 分类 chips、网格与列表视图、详情与表单、记使用 / 借出 / 归还
-- ✅ 空间：房间 → 区域 → 收纳单元三层树、容量利用率、待归位指定位置
-- ✅ 整理建议：闲置 / 保修 / 重复购买 / 空间超载 / 未归位 / 借出超期规则引擎（阈值逻辑一致）
-- ✅ 数据分析：分类价值、状态分布、年份分布、高频使用排行
-- ✅ 设置：JSON / CSV 导入导出、分类管理（9 色板）、闲置判定天数、数据占用估算
-
 ## 待办（后续版本）
 
-- [ ] Android / iOS 应用图标（flutter_launcher_icons）
+- [ ] Android / iOS 真机全面回归（设置页问题待真机日志定位）
 - [ ] Web 版 localStorage 数据一键迁移引导（粘贴 JSON 即导入）
 - [ ] 多设备同步（WebDAV / 云盘）
-- [ ] iOS / macOS 真机与签名配置
+- [ ] iOS / macOS 真机与签名配置、macOS Release 产物
+- [ ] 深色模式、国际化
