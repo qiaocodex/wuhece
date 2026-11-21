@@ -197,6 +197,8 @@ class AppStore extends ChangeNotifier {
     String status = 'in_use',
     String? image,
     String note = '',
+    String? disposedAt,
+    double? disposalPrice,
   }) {
     final now = nowIso();
     final item = Item(
@@ -212,6 +214,8 @@ class AppStore extends ChangeNotifier {
       status: status,
       image: image,
       note: note.trim(),
+      disposedAt: disposedAt,
+      disposalPrice: disposalPrice,
       createdAt: now,
       updatedAt: now,
     );
@@ -598,6 +602,58 @@ class AppStore extends ChangeNotifier {
     return list;
   }
 
+  /* ------------------------- 处置与资产曲线 ------------------------- */
+
+  /// 已处置物品（状态 discarded）
+  List<Item> disposedItems() => items.where((it) => it.status == 'discarded').toList();
+
+  /// 处置统计：件数 / 原值合计 / 残值合计 / 回收率（%）
+  ({int count, double originalValue, double salvage, int recoveryPct}) disposalStats() {
+    final disposed = disposedItems();
+    final original = disposed.fold(0.0, (s, it) => s + it.value);
+    final salvage = disposed.fold(0.0, (s, it) => s + (it.disposalPrice ?? 0));
+    final priced = disposed.where((it) => it.disposalPrice != null).toList();
+    final originalOfPriced = priced.fold(0.0, (s, it) => s + it.value);
+    final pct = originalOfPriced > 0 ? (salvage / originalOfPriced * 100).round() : 0;
+    return (count: disposed.length, originalValue: original, salvage: salvage, recoveryPct: pct);
+  }
+
+  /// 月度资产净投入曲线：按月累计购入金额 − 处置回收
+  List<AssetMonthPoint> monthlyAssetSeries() {
+    final changes = <String, double>{};
+    for (final it in items) {
+      final buy = it.purchaseDate;
+      if (buy != null && buy.length >= 7) {
+        final m = buy.substring(0, 7);
+        changes[m] = (changes[m] ?? 0) + it.value;
+      }
+      final dis = it.disposedAt;
+      if (dis != null && dis.length >= 7) {
+        final m = dis.substring(0, 7);
+        changes[m] = (changes[m] ?? 0) - (it.disposalPrice ?? 0);
+      }
+    }
+    if (changes.isEmpty) return const [];
+
+    final months = changes.keys.toList()..sort();
+    final first = months.first;
+    final now = DateTime.now();
+    var cursor = DateTime(int.parse(first.substring(0, 4)), int.parse(first.substring(5, 7)));
+    final end = DateTime(now.year, now.month);
+    final points = <AssetMonthPoint>[];
+    var cumulative = 0.0;
+    var guard = 0;
+    while (!cursor.isAfter(end) && guard < 600) {
+      final key =
+          '${cursor.year.toString().padLeft(4, '0')}-${cursor.month.toString().padLeft(2, '0')}';
+      cumulative += changes[key] ?? 0;
+      points.add(AssetMonthPoint(month: key, cumulativeInvested: cumulative));
+      cursor = DateTime(cursor.year, cursor.month + 1);
+      guard += 1;
+    }
+    return points;
+  }
+
   /* ------------------------- 整理建议引擎 ------------------------- */
 
   List<Suggestion> getSuggestions() {
@@ -802,6 +858,13 @@ class YearStat {
   final String year;
   int count = 0;
   double value = 0;
+}
+
+/// 资产曲线的月度点
+class AssetMonthPoint {
+  const AssetMonthPoint({required this.month, required this.cumulativeInvested});
+  final String month; // yyyy-MM
+  final double cumulativeInvested;
 }
 
 class SiteStats {

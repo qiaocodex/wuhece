@@ -9,6 +9,7 @@ import '../../services/format.dart';
 import '../../store/app_store.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'dispose_form.dart';
 import 'item_form.dart';
 
 /// 打开物品详情（宽屏对话框 / 窄屏底部面板）
@@ -220,6 +221,15 @@ class _ItemDetailBody extends StatelessWidget {
           },
           icon: const Icon(Icons.arrow_forward, size: 14),
           label: const Text('标记借出'),
+        ),
+      if (item.status != 'discarded')
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.pop(context);
+            openDisposeForm(context, item);
+          },
+          icon: const Icon(Icons.delete_sweep_outlined, size: 14),
+          label: const Text('处理掉'),
         ),
       OutlinedButton(
         onPressed: () {

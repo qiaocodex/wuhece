@@ -37,11 +37,13 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
   final _warrantyCtrl = TextEditingController();
   final _tagsCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _disposalPriceCtrl = TextEditingController();
 
   late String _categoryId;
   late String _status;
   String _spaceId = '';
   String? _purchaseDate;
+  String? _disposedAt;
   String? _image;
   bool _saving = false;
 
@@ -60,6 +62,11 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
     _status = item?.status ?? 'in_use';
     _spaceId = item?.spaceId ?? '';
     _purchaseDate = item?.purchaseDate ?? (item == null ? toISODate() : null);
+    _disposedAt = item?.disposedAt ?? (item == null ? toISODate() : null);
+    _disposalPriceCtrl.text =
+        item != null && item.disposalPrice != null && item.disposalPrice! > 0
+            ? _trimNum(item.disposalPrice!)
+            : '';
     _image = item?.image;
   }
 
@@ -72,6 +79,7 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _warrantyCtrl.dispose();
+    _disposalPriceCtrl.dispose();
     _tagsCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
@@ -80,6 +88,19 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
   Future<void> _pickImage() async {
     final url = await pickImageAsDataUrl(context);
     if (url != null) setState(() => _image = url);
+  }
+
+  Future<void> _pickDisposeDate() async {
+    final now = DateTime.now();
+    final initial = DateTime.tryParse(_disposedAt ?? '') ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1950),
+      lastDate: DateTime(now.year + 1),
+      helpText: '选择处置日期',
+    );
+    if (picked != null) setState(() => _disposedAt = toISODate(picked));
   }
 
   Future<void> _pickDate() async {
@@ -110,6 +131,8 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
     final warranty = int.tryParse(_warrantyCtrl.text.trim()) ?? 0;
     final tags = parseTags(_tagsCtrl.text);
     final note = _noteCtrl.text.trim();
+    final disposePrice =
+        double.tryParse(_disposalPriceCtrl.text.trim().replaceAll(',', ''));
 
     setState(() => _saving = true);
     if (widget.item != null) {
@@ -123,6 +146,10 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
         ..purchaseDate = _purchaseDate
         ..warrantyMonths = warranty < 0 ? 0 : warranty
         ..status = _status
+        ..disposedAt = _status == 'discarded' ? _disposedAt : null
+        ..disposalPrice = _status == 'discarded' && disposePrice != null && disposePrice >= 0
+            ? disposePrice
+            : null
         ..image = _image
         ..note = note;
       store.updateItem(widget.item!.id, edited);
@@ -140,6 +167,9 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
         tags: tags,
         note: note,
         image: _image,
+        disposedAt: _status == 'discarded' ? _disposedAt : null,
+        disposalPrice:
+            _status == 'discarded' && disposePrice != null && disposePrice >= 0 ? disposePrice : null,
       );
       toast(context, '物品已入库');
     }
@@ -172,7 +202,11 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
           ),
           const SizedBox(height: 14),
           FormGrid(
-            fullWidths: [false, false, true, false, false, true, false, true],
+            fullWidths: [
+              false, false,
+              if (_status == 'discarded') ...[false, false],
+              true, false, false, true, false, true, true,
+            ],
             children: [
               FormField2(
                 label: '分类',
@@ -198,6 +232,32 @@ class _ItemFormBodyState extends State<_ItemFormBody> {
                   onChanged: (v) => setState(() => _status = v ?? _status),
                 ),
               ),
+              if (_status == 'discarded') ...[
+                FormField2(
+                  label: '处置日期',
+                  child: InkWell(
+                    onTap: _pickDisposeDate,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        suffixIcon: Icon(Icons.calendar_today_outlined, size: 16, color: GColors.muted),
+                      ),
+                      child: Text(
+                        formatDate(_disposedAt),
+                        style: TextStyle(fontSize: 13.5, color: context.gc.ink),
+                      ),
+                    ),
+                  ),
+                ),
+                FormField2(
+                  label: '残值（元，可空）',
+                  child: TextField(
+                    controller: _disposalPriceCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(hintText: '卖出 / 回收所得'),
+                  ),
+                ),
+              ],
               FormField2(
                 label: '存放位置',
                 child: SelectField<String>(

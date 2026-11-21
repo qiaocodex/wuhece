@@ -2,7 +2,7 @@ name: guiwu
 description: "物盒册 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.3.0+7
+version: 1.4.0+8
 
 environment:
   sdk: ^3.14.0

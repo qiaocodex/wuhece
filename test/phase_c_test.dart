@@ -66,7 +66,7 @@ void main() {
     });
 
     testWidgets('暗色主题下设置页构建无异常', (tester) async {
-      final store = await _freshStore();
+      await _freshStore();
       await tester.pumpWidget(
         MaterialApp(
           theme: buildGuiwuTheme(dark: true),
@@ -81,6 +81,8 @@ void main() {
 
     testWidgets('标签页空态构建无异常', (tester) async {
       final store = await _freshStore();
+      // ignore: unused_local_variable
+      store; // 初始化单例
       store.clearAll();
       await tester.pumpWidget(
         MaterialApp(theme: buildGuiwuTheme(), home: const Scaffold(body: TagsPage())),

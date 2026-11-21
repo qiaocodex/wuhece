@@ -220,6 +220,8 @@ class SettingsPage extends StatelessWidget {
           warrantyMonths: d.warrantyMonths,
           status: d.status,
           note: d.note,
+          disposedAt: d.disposedAt,
+          disposalPrice: d.disposalPrice,
           createdAt: now,
           updatedAt: now,
         ));

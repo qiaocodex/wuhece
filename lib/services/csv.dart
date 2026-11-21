@@ -68,6 +68,8 @@ const Map<String, List<String>> kCsvColumns = {
   'status': ['状态', 'status'],
   'tags': ['标签', 'tags'],
   'note': ['备注', 'note'],
+  'disposedAt': ['处置日期', 'disposedate'],
+  'disposalPrice': ['残值', '残值(元)', 'disposalprice'],
 };
 
 const Map<String, String> kCsvStatus = {
@@ -90,6 +92,8 @@ class CsvRowDraft {
     required this.status,
     required this.tags,
     required this.note,
+    this.disposedAt,
+    this.disposalPrice,
   });
 
   final String name;
@@ -102,6 +106,10 @@ class CsvRowDraft {
   final String status;
   final List<String> tags;
   final String note;
+
+  /// 处置信息（可选）
+  final String? disposedAt;
+  final double? disposalPrice;
 }
 
 double _toNumber(String value) {
@@ -171,6 +179,10 @@ List<CsvRowDraft> mapCsvRows(List<String> header, List<List<String>> rows) {
       status: kCsvStatus[cell(row, 'status')] ?? 'in_use',
       tags: parseTags(cell(row, 'tags').replaceAll(RegExp(r'\s*/\s*'), '，')),
       note: cell(row, 'note'),
+      disposedAt: normalizeDate(cell(row, 'disposedAt')),
+      disposalPrice: cell(row, 'disposalPrice').isEmpty
+          ? null
+          : _toNumber(cell(row, 'disposalPrice')),
     ));
   }
   return result;
@@ -183,7 +195,7 @@ String buildItemsCsv() {
   final store = AppStore.instance;
   const header = [
     '名称', '分类', '存放位置', '数量', '单价', '总价值',
-    '购入日期', '保修期(月)', '状态', '标签', '备注',
+    '购入日期', '保修期(月)', '状态', '标签', '备注', '处置日期', '残值(元)',
   ];
   final rows = store.items.map<List<Object?>>((it) {
     final cat = store.getCategory(it.categoryId);
@@ -199,6 +211,8 @@ String buildItemsCsv() {
       kStatusMeta[it.status]?.label ?? it.status,
       it.tags.join(' / '),
       it.note,
+      it.disposedAt ?? '',
+      it.disposalPrice ?? '',
     ];
   }).toList();
   return '\ufeff${toCSV([header, ...rows])}';

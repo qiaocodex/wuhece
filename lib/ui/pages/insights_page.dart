@@ -7,6 +7,7 @@ import '../../store/app_store.dart';
 import '../shell.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'dispose_form.dart';
 import 'item_detail.dart';
 import 'space_form.dart';
 
@@ -205,20 +206,10 @@ class _InsightsPageState extends State<InsightsPage> {
         }));
       }
       if (s.actions.contains('mark_discarded')) {
-        buttons.add(soft('处理掉', Icons.delete_outline, () async {
+        buttons.add(soft('处理掉', Icons.delete_outline, () {
           final item = store.getItem(s.itemId!);
           if (item == null) return;
-          final ok = await confirmDialog(
-            context,
-            title: '处理物品',
-            message: '将「${item.name}」标记为已处理？它会从统计与建议中移除，记录仍会保留。',
-            confirmText: '标记已处理',
-            danger: true,
-          );
-          if (!ok || !context.mounted) return;
-          store.patchItem(s.itemId!, (i) => i.status = 'discarded');
-          toast(context, '已标记为已处理');
-          setState(() {});
+          openDisposeForm(context, item);
         }, danger: true));
       }
       if (s.actions.contains('return')) {

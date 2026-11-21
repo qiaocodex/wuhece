@@ -76,6 +76,8 @@ class Item {
     this.status = 'in_use',
     this.image,
     this.note = '',
+    this.disposedAt,
+    this.disposalPrice,
     List<UsageLog>? logs,
     required this.createdAt,
     required this.updatedAt,
@@ -95,6 +97,12 @@ class Item {
   String status;
   String? image;
   String note;
+
+  /// 处置信息（v1.4.0 扩展字段，Web 版旧数据缺省为 null）
+  String? disposedAt;
+
+  /// 处置残值（元，卖掉/回收所得）
+  double? disposalPrice;
   List<UsageLog> logs;
   String updatedAt;
 
@@ -114,6 +122,8 @@ class Item {
         status: json['status'] as String? ?? 'in_use',
         image: json['image'] as String?,
         note: json['note'] as String? ?? '',
+        disposedAt: json['disposedAt'] as String?,
+        disposalPrice: (json['disposalPrice'] as num?)?.toDouble(),
         logs: (json['logs'] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(UsageLog.fromJson)
@@ -135,6 +145,8 @@ class Item {
         'status': status,
         'image': image,
         'note': note,
+        'disposedAt': disposedAt,
+        'disposalPrice': disposalPrice,
         'logs': logs.map((l) => l.toJson()).toList(),
         'createdAt': createdAt,
         'updatedAt': updatedAt,
@@ -154,6 +166,8 @@ class Item {
         status: status,
         image: image,
         note: note,
+        disposedAt: disposedAt,
+        disposalPrice: disposalPrice,
         logs: List<UsageLog>.of(logs),
         createdAt: createdAt,
         updatedAt: updatedAt,
@@ -172,6 +186,8 @@ class Item {
     other.status = status;
     other.image = image;
     other.note = note;
+    other.disposedAt = disposedAt;
+    other.disposalPrice = disposalPrice;
   }
 }
 

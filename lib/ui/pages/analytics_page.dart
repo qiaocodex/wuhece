@@ -6,12 +6,14 @@ import 'dart:math' show max;
 import 'package:material_ui/material_ui.dart';
 
 import '../../models/models.dart';
+import '../../services/dates.dart';
 import '../../services/format.dart';
 import '../../store/app_store.dart';
 import '../shell.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'item_detail.dart';
+import '../widgets/line_chart.dart';
 
 class AnalyticsPage extends StatelessWidget {
   const AnalyticsPage({super.key});
@@ -38,6 +40,10 @@ class AnalyticsPage extends StatelessWidget {
         final inUsePct = active.isEmpty ? 0 : (inUseCount / active.length * 100).round();
         final maxCatValue = cats.isEmpty ? 1.0 : cats.map((c) => c.value).reduce(max);
         final maxYearCount = years.isEmpty ? 1 : years.map((y) => y.count).reduce(max);
+        final disposal = store.disposalStats();
+        final series = store.monthlyAssetSeries();
+        final recentDisposed = store.disposedItems().toList()
+          ..sort((a, b) => (b.disposedAt ?? '').compareTo(a.disposedAt ?? ''));
 
         return pageContainer(
           context,
@@ -93,6 +99,41 @@ class AnalyticsPage extends StatelessWidget {
               context,
               _yearCard(context, years, maxYearCount),
               _rankingCard(context, ranking),
+            ),
+            const SizedBox(height: kSectionGap),
+            StatGrid(children: [
+              StatCard(
+                icon: Icons.delete_sweep_outlined,
+                label: '已处置物品',
+                value: '${disposal.count}',
+                valueSuffix: '件',
+                hint: '原值合计 ${money(disposal.originalValue)}',
+                iconBg: context.gc.bgDeep,
+                iconColor: context.gc.inkSoft,
+              ),
+              StatCard(
+                icon: Icons.savings_outlined,
+                label: '处置残值',
+                value: money(disposal.salvage),
+                hint: '卖出 / 回收所得',
+                iconBg: context.gc.primaryWeak,
+                iconColor: context.gc.primary,
+              ),
+              StatCard(
+                icon: Icons.trending_down,
+                label: '残值回收率',
+                value: '${disposal.recoveryPct}',
+                valueSuffix: '%',
+                hint: '残值 ÷ 对应原值',
+                iconBg: context.gc.accentWeak,
+                iconColor: context.gc.accent,
+              ),
+            ]),
+            const SizedBox(height: kSectionGap),
+            twoColumns(
+              context,
+              _disposalCard(context, recentDisposed),
+              _trendCard(series),
             ),
           ],
         );
@@ -317,6 +358,80 @@ class AnalyticsPage extends StatelessWidget {
                   ),
               ],
             ),
+    );
+  }
+
+  Widget _disposalCard(BuildContext context, List<Item> recentDisposed) {
+    return SectionCard(
+      title: '处置记录',
+      sub: '最近处置的物品与残值',
+      child: recentDisposed.isEmpty
+          ? const EmptyState(
+              title: '还没有处置记录',
+              desc: '在整理建议或物品详情里「处理掉」物品后，这里会记录残值与回收率。',
+              icon: Icons.delete_sweep_outlined,
+            )
+          : Column(
+              children: [
+                for (final item in recentDisposed.take(6))
+                  InkWell(
+                    onTap: () => openItemDetail(context, item.id),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.gc.ink,
+                                  ),
+                                ),
+                                Text(
+                                  '处置于 ${item.disposedAt != null ? formatDate(item.disposedAt) : '—'}'
+                                  ' · 原值 ${money(item.value)}',
+                                  style: TextStyle(fontSize: 11.5, color: context.gc.muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            item.disposalPrice != null ? money(item.disposalPrice!) : '—',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: item.disposalPrice != null ? context.gc.primary : context.gc.muted2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+    );
+  }
+
+  Widget _trendCard(List<AssetMonthPoint> series) {
+    return SectionCard(
+      title: '月度资产变化',
+      sub: '按月累计购入 − 处置回收',
+      child: series.isEmpty
+          ? const EmptyState(
+              title: '暂无资产数据',
+              desc: '录入物品后即可看到资产变化曲线。',
+              icon: Icons.show_chart,
+            )
+          : AssetTrendChart(points: series),
     );
   }
 }
