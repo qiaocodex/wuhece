@@ -88,7 +88,8 @@ macOS 产物因需签名公证暂不在流水线内，可本地 `flutter build m
 
 ## 待办（后续版本）
 
-- [ ] Android / iOS 真机全面回归（设置页问题待真机日志定位）
+- [x] Android 设置页空白问题（已解决，2026-11-21 验收）
+- [ ] Android / iOS 真机全面回归
 - [ ] Web 版 localStorage 数据一键迁移引导（粘贴 JSON 即导入）
 - [ ] 多设备同步（WebDAV / 云盘）
 - [ ] iOS / macOS 真机与签名配置、macOS Release 产物
