@@ -36,6 +36,9 @@ class ItemsPageState extends State<ItemsPage> {
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
 
+  /// 快捷键：聚焦搜索框
+  void focusSearch() => _searchFocus.requestFocus();
+
   /// 供外壳调用（如「查看同类物品」直接带词搜索）
   void applySearch(String query) {
     setState(() {

@@ -52,6 +52,8 @@ lib/
 
 **状态管理**：零第三方依赖，`AppStore extends ChangeNotifier` + `ListenableBuilder`。
 
+**自托管服务端**：仓库 `server/` 目录提供 BoxBook Cloud 自托管同步服务端（多用户、共享物品册、Web 管理页、Docker 一键部署），详见 [server/README.md](server/README.md)。
+
 **持久化**：`shared_preferences`（键 `guiwu.data.v2`），JSON 结构与 Web 版完全一致 ——
 **Web 版导出的 JSON 备份可直接导入本应用，反之亦然。**
 
@@ -83,7 +85,8 @@ macOS 产物因需签名公证暂不在流水线内，可本地 `flutter build m
 | 图片压缩 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 导出 JSON / CSV | 系统分享 | 系统分享 | 另存为下载 | 另存为对话框 | 另存为对话框 |
 | 导入 JSON / CSV | ❌* | ✅ | ✅ | ✅ | ✅ |
-| WebDAV 云同步（坚果云/NAS） | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 云同步：WebDAV / Supabase / S3 / BoxBook Cloud 自托管 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 桌面快捷键 / 窗口尺寸记忆 | ✅ | — | — | ✅ | ✅ |
 | 深色模式 / 标签管理 / 图片墙 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 处置统计 / 月度资产曲线 | ✅ | ✅ | ✅ | ✅ | ✅ |
 

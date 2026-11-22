@@ -1,6 +1,7 @@
 /// 自适应外壳：宽屏侧栏导航，窄屏顶部栏 + 底部导航（对应 Web 版 app.js 的 shell）
 library;
 
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../services/file_io.dart' as file_io;
@@ -144,15 +145,36 @@ class _HomeShellState extends State<HomeShell> {
     return ShellNav(
       go: _go,
       searchItems: _searchItems,
-      child: ListenableBuilder(
-        listenable: widget.store,
-        builder: (context, _) => wide
-            ? Scaffold(body: Row(children: [_buildSidebar(context), _vLine(), Expanded(child: body)]))
-            : Scaffold(
-                appBar: _mobileAppBar(context),
-                body: body,
-                bottomNavigationBar: _bottomNav(context),
-              ),
+      child: CallbackShortcuts(
+        bindings: {
+          // Ctrl/Cmd+N 新增物品；Ctrl/Cmd+F 搜索；Ctrl/Cmd+1~5 切换页面；Ctrl/Cmd+, 设置
+          SingleActivator(LogicalKeyboardKey.keyN, control: true): () => openItemForm(context),
+          SingleActivator(LogicalKeyboardKey.keyN, meta: true): () => openItemForm(context),
+          SingleActivator(LogicalKeyboardKey.keyF, control: true): () => _itemsKey.currentState?.focusSearch(),
+          SingleActivator(LogicalKeyboardKey.keyF, meta: true): () => _itemsKey.currentState?.focusSearch(),
+          SingleActivator(LogicalKeyboardKey.comma, control: true): _openSettings,
+          SingleActivator(LogicalKeyboardKey.comma, meta: true): _openSettings,
+          const SingleActivator(LogicalKeyboardKey.digit1, control: true): () => _go(0),
+          const SingleActivator(LogicalKeyboardKey.digit1, meta: true): () => _go(0),
+          const SingleActivator(LogicalKeyboardKey.digit2, control: true): () => _go(1),
+          const SingleActivator(LogicalKeyboardKey.digit2, meta: true): () => _go(1),
+          const SingleActivator(LogicalKeyboardKey.digit3, control: true): () => _go(2),
+          const SingleActivator(LogicalKeyboardKey.digit3, meta: true): () => _go(2),
+          const SingleActivator(LogicalKeyboardKey.digit4, control: true): () => _go(3),
+          const SingleActivator(LogicalKeyboardKey.digit4, meta: true): () => _go(3),
+          const SingleActivator(LogicalKeyboardKey.digit5, control: true): () => _go(4),
+          const SingleActivator(LogicalKeyboardKey.digit5, meta: true): () => _go(4),
+        },
+        child: ListenableBuilder(
+          listenable: widget.store,
+          builder: (context, _) => wide
+              ? Scaffold(body: Row(children: [_buildSidebar(context), _vLine(), Expanded(child: body)]))
+              : Scaffold(
+                  appBar: _mobileAppBar(context),
+                  body: body,
+                  bottomNavigationBar: _bottomNav(context),
+                ),
+        ),
       ),
     );
   }

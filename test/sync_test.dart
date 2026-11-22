@@ -58,10 +58,15 @@ void main() {
       final backend = FakeBackend();
       final outcome = await SyncService.uploadBackup(store, backend, prefs);
       expect(outcome.ok, isTrue);
+      final lastSync = prefs.getString(SyncService.lastExportedAtKey);
+      // ignore: avoid_print
+      print('DEBUG remote=${backend.remote?.substring(0, 60)}');
+      // ignore: avoid_print
+      print('DEBUG exportedAt=${SyncService.remoteExportedAt(backend.remote ?? '')} lastSync=$lastSync localAt=${SyncService.localLatestUpdatedAt(store)}');
       final d = SyncService.decide(
         remoteContent: backend.remote,
         store: store,
-        lastSyncExportedAt: prefs.getString(SyncService.lastExportedAtKey),
+        lastSyncExportedAt: lastSync,
       );
       expect(d, SyncDirection.none);
     });

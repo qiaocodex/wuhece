@@ -48,9 +48,14 @@ class SyncService {
   static String? lastSyncAt(SharedPreferences prefs) => prefs.getString(lastAtKey);
 
   /// 本地数据的最近变更时间（取所有物品 updatedAt 最大值）
+  ///
+  /// 忽略未来时间戳（种子示例数据的「今天 10:24 使用」在上午运行时超前于
+  /// 当前时刻，属于示例构造，不参与同步方向判定）。
   static String? localLatestUpdatedAt(AppStore store) {
+    final now = DateTime.now().toUtc().toIso8601String();
     String? best;
     for (final it in store.items) {
+      if (it.updatedAt.compareTo(now) > 0) continue;
       if (it.updatedAt.compareTo(best ?? '') > 0) best = it.updatedAt;
     }
     return best;

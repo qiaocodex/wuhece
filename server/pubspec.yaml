@@ -1,0 +1,16 @@
+name: boxbook_server
+description: "BoxBook Cloud 自托管同步服务端：多用户、共享物品册、Web 管理页"
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  shelf: ^1.4.0
+  shelf_router: ^1.1.4
+  crypto: ^3.0.0
+
+dev_dependencies:
+  test: ^1.24.0
+  http: ^1.2.0

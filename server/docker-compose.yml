@@ -1,0 +1,13 @@
+services:
+  boxbook:
+    build: .
+    container_name: boxbook-cloud
+    ports:
+      - "8800:8800"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=8800
+      - DB_PATH=/data/boxbook.db
+      # - OPEN_REGISTRATION=0   # 关闭开放注册
+    restart: unless-stopped

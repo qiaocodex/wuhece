@@ -44,6 +44,8 @@ class ChatTurn {
 class GlmChatService {
   GlmChatService({required this.apiKey, this.model = 'glm-4.5-flash'});
 
+  final http.Client _client = http.Client();
+
   static const endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
   static const defaultModel = 'glm-4.5-flash';
 
@@ -121,6 +123,132 @@ class GlmChatService {
       }
       history.addAll(toolResults.map(ChatTurn.new));
       _trimHistory();
+    }
+    return '（本轮工具调用次数过多，已中断，请换个说法重试）';
+  }
+
+  /// 流式发送：通过 SSE 增量回调 assistant 部分文本，
+  /// 工具调用轮自动执行并继续生成，返回最终完整回复。
+  Future<String> sendStreaming(
+    String userText, {
+    required String ownerName,
+    required void Function(String partialText) onDelta,
+  }) async {
+    if (history.where((t) => t.role == 'user').isEmpty) {
+      history.insert(0, _systemTurn(ownerName));
+    }
+    history.add(ChatTurn.user(userText));
+    _trimHistory();
+
+    for (var round = 0; round < 3; round++) {
+      final request = http.Request('POST', Uri.parse(endpoint))
+        ..headers.addAll({
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+        })
+        ..body = jsonEncode({
+          'model': model,
+          'messages': [_systemTurn(ownerName), ...history.map((t) => t.data)],
+          'tools': _tools,
+          'temperature': 0.3,
+          'stream': true,
+        });
+
+      http.StreamedResponse response;
+      try {
+        response = await _client.send(request).timeout(const Duration(seconds: 120));
+      } on TimeoutException {
+        throw GlmException('请求超时，请检查网络后重试');
+      } catch (err) {
+        throw GlmException('网络连接失败，请检查网络后重试');
+      }
+      if (response.statusCode == 401) {
+        throw GlmException('API Key 无效或已过期，请到「设置 → AI 助手」检查');
+      }
+      if (response.statusCode != 200) {
+        final bodyText = await response.stream.bytesToString();
+        final snippet = bodyText.length > 160 ? '${bodyText.substring(0, 160)}…' : bodyText;
+        throw GlmException('接口错误 ${response.statusCode}：$snippet');
+      }
+
+      // SSE 解析：累积文本增量与工具调用片段
+      var contentBuf = '';
+      final toolCalls = <int, Map<String, dynamic>>{};
+
+      await for (final raw in response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        final line = raw.trim();
+        if (!line.startsWith('data:')) continue;
+        final payload = line.substring(5).trim();
+        if (payload == '[DONE]') break;
+        if (payload.isEmpty) continue;
+
+        Map<String, dynamic> chunk;
+        try {
+          chunk = jsonDecode(payload) as Map<String, dynamic>;
+        } catch (_) {
+          continue;
+        }
+        final choices = chunk['choices'] as List?;
+        if (choices == null || choices.isEmpty) continue;
+        final delta = (choices.first as Map)['delta'];
+        if (delta == null) continue;
+
+        final contentDelta = delta['content'];
+        if (contentDelta != null && contentDelta.toString().isNotEmpty) {
+          contentBuf += contentDelta.toString();
+          onDelta(contentBuf);
+        }
+        for (final tc in (delta['tool_calls'] as List? ?? const [])) {
+          final tcm = tc as Map;
+          final idx = (tcm['index'] as num?)?.toInt() ?? 0;
+          final cur = toolCalls.putIfAbsent(idx, () => <String, dynamic>{
+                'id': 'call_$idx',
+                'function': {'name': '', 'arguments': ''},
+              });
+          if (tcm['id'] != null) cur['id'] = tcm['id'];
+          final fn = (tcm['function'] ?? {}) as Map;
+          if (fn['name'] != null && fn['name'].toString().isNotEmpty) {
+            cur['function']['name'] = fn['name'].toString();
+          }
+          if (fn['arguments'] != null) {
+            cur['function']['arguments'] =
+                cur['function']['arguments'].toString() + fn['arguments'].toString();
+          }
+        }
+      }
+
+      if (toolCalls.isNotEmpty) {
+        history.add(ChatTurn({
+          'role': 'assistant',
+          if (contentBuf.isNotEmpty) 'content': contentBuf,
+          'tool_calls': [
+            for (final entry in toolCalls.entries)
+              {
+                'id': entry.value['id'],
+                'type': 'function',
+                'function': entry.value['function'],
+              }
+          ],
+        }));
+        for (final entry in toolCalls.entries) {
+          final fn = entry.value['function'] as Map<String, dynamic>;
+          final result = executeTool(fn['name']?.toString() ?? '', _parseArgs(fn['arguments']));
+          history.add(ChatTurn({
+            'role': 'tool',
+            'tool_call_id': entry.value['id'],
+            'content': result,
+          }));
+        }
+        _trimHistory();
+        continue;
+      }
+
+      final reply = contentBuf.isEmpty ? '（模型未返回内容）' : contentBuf;
+      history.add(ChatTurn.assistant(reply));
+      _trimHistory();
+      return reply;
     }
     return '（本轮工具调用次数过多，已中断，请换个说法重试）';
   }

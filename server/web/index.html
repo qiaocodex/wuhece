@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BoxBook Cloud · 物品册同步服务</title>
+<style>
+  :root { --primary:#2E6B5E; --bg:#F5F2ED; --surface:#fff; --ink:#24221E; --muted:#8B8377; --line:#E9E3D9; --danger:#B3453A; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif; font-size:14px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .brand .mark { width:36px;height:36px;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700; }
+  h1 { font-size:18px; margin:0; }
+  .card { background:var(--surface); border-radius:16px; padding:18px; box-shadow:0 2px 8px rgba(44,38,30,.06); margin-bottom:16px; }
+  .card h2 { font-size:14px; margin:0 0 12px; color:var(--ink); }
+  input, select { width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:10px; font-size:13px; margin-bottom:10px; background:#FAF8F5; }
+  button { padding:9px 16px; border:0; border-radius:10px; background:var(--primary); color:#fff; font-size:13px; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--primary); border:1px solid var(--line); }
+  button.danger { background:transparent; color:var(--danger); border:1px solid var(--danger); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:10px; } .row > * { flex:1; }
+  .book { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .book:last-child { border-bottom:0; }
+  .book .info { flex:1; min-width:0; }
+  .book .name { font-weight:600; }
+  .book .meta { font-size:11.5px; color:var(--muted); }
+  .muted { color:var(--muted); font-size:12px; }
+  .msg { padding:8px 12px; border-radius:10px; margin-bottom:12px; display:none; font-size:13px; }
+  .msg.err { background:#F9E9E7; color:var(--danger); display:block; }
+  .msg.ok { background:#E8F0EC; color:var(--primary); display:block; }
+  .hidden { display:none; }
+  a { color:var(--primary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="mark">盒</div>
+    <div><h1>BoxBook Cloud</h1><div class="muted">物盒册自托管同步服务 · 数据存放在你自己的服务器上</div></div>
+  </div>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- 登录 / 注册 -->
+  <div id="authCard" class="card">
+    <h2>登录 / 注册</h2>
+    <input id="username" placeholder="用户名" autocomplete="username">
+    <input id="password" type="password" placeholder="密码（至少 4 位）" autocomplete="current-password">
+    <div class="row">
+      <button onclick="login()">登录</button>
+      <button class="ghost" onclick="register()">注册新账号</button>
+    </div>
+  </div>
+
+  <!-- 物品册列表 -->
+  <div id="booksCard" class="card hidden">
+    <h2>我的物品册</h2>
+    <div id="bookList"></div>
+    <div class="row" style="margin-top:12px">
+      <input id="newName" placeholder="新物品册名称">
+      <button onclick="createBook()" style="flex:0 0 auto">创建</button>
+    </div>
+    <div class="muted" style="margin-top:8px">在物盒册 App「设置 → 云同步 → BoxBook Cloud」中选择物品册即可多端同步；共享物品册的成员都会出现在这里。</div>
+  </div>
+
+  <!-- 详情：成员与备份 -->
+  <div id="detailCard" class="card hidden">
+    <h2>物品册详情</h2>
+    <div class="muted" id="detailName"></div>
+    <h2 style="margin-top:14px">备份下载</h2>
+    <button class="ghost" onclick="downloadBackup()">下载当前备份 JSON</button>
+    <h2 style="margin-top:14px">共享成员</h2>
+    <div id="memberList"></div>
+    <div class="row" style="margin-top:10px">
+      <input id="shareUser" placeholder="对方用户名（需已注册）">
+      <select id="shareRole">
+        <option value="editor">可编辑</option>
+        <option value="viewer">只读</option>
+      </select>
+      <button onclick="share()" style="flex:0 0 auto">共享</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let token = localStorage.getItem('boxbook-token') || '';
+let books = [];
+let currentBook = null;
+
+function showMsg(text, isErr = false) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + (isErr ? 'err' : 'ok');
+  setTimeout(() => { el.className = 'msg'; }, 3500);
+}
+
+async function api(path, options = {}) {
+  const resp = await fetch(path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'Authorization': token ? 'Bearer ' + token : '', ...(options.headers || {}) },
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
+  return data;
+}
+
+async function login() {
+  try {
+    const d = await api('/api/login', { method: 'POST', body: JSON.stringify({ username: val('username'), password: val('password') }) });
+    token = d.token; localStorage.setItem('boxbook-token', token);
+    showMsg('登录成功'); await loadBooks();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+async function register() {
+  try {
+    const d = await api('/api/register', { method: 'POST', body: JSON.stringify({ username: val('username'), password: val('password') }) });
+    token = d.token; localStorage.setItem('boxbook-token', token);
+    showMsg('注册成功，已自动登录'); await loadBooks();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+const val = (id) => document.getElementById(id).value;
+
+async function loadBooks() {
+  document.getElementById('authCard').classList.add('hidden');
+  document.getElementById('booksCard').classList.remove('hidden');
+  document.getElementById('detailCard').classList.add('hidden');
+  const d = await api('/api/books');
+  books = d.books || [];
+  const list = document.getElementById('bookList');
+  list.innerHTML = '';
+  books.forEach((b) => {
+    const div = document.createElement('div');
+    div.className = 'book';
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${escapeHtml(b.name)} <span class="muted">· ${roleLabel(b.role)}</span></div>
+        <div class="meta">创建者 ${escapeHtml(b.ownerName)} · ${b.memberCount} 位成员 · 备份时间 ${b.updatedAt || '从未同步'}</div>
+      </div>
+      <button class="ghost" onclick="openDetail(${b.id})">详情</button>
+      ${b.role === 'owner' ? `<button class="danger" onclick="delBook(${b.id})">删除</button>` : ''}`;
+    list.appendChild(div);
+  });
+}
+
+function roleLabel(r) { return r === 'owner' ? '创建者' : r === 'editor' ? '可编辑' : '只读'; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function createBook() {
+  try {
+    await api('/api/books', { method: 'POST', body: JSON.stringify({ name: val('newName') }) });
+    document.getElementById('newName').value = '';
+    showMsg('创建成功'); await loadBooks();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+async function delBook(id) {
+  if (!confirm('删除该物品册？其中数据将一并删除。')) return;
+  try { await api('/api/books/' + id, { method: 'DELETE' }); showMsg('已删除'); await loadBooks(); }
+  catch (e) { showMsg(e.message, true); }
+}
+
+async function openDetail(id) {
+  currentBook = books.find((b) => b.id === id);
+  document.getElementById('booksCard').classList.add('hidden');
+  document.getElementById('detailCard').classList.remove('hidden');
+  document.getElementById('detailName').textContent = currentBook.name + '（' + roleLabel(currentBook.role) + '）';
+  const memberList = document.getElementById('memberList');
+  memberList.innerHTML = '';
+  if (currentBook.role === 'owner') {
+    try {
+      const d = await api('/api/books/' + id + '/members');
+      Object.entries(d.members || {}).forEach(([u, r]) => {
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.textContent = u + ' · ' + roleLabel(r);
+        memberList.appendChild(div);
+      });
+    } catch (e) { /* 忽略 */ }
+  } else {
+    memberList.innerHTML = '<div class="muted">仅创建者可查看成员列表</div>';
+  }
+}
+
+async function share() {
+  try {
+    await api('/api/books/' + currentBook.id + '/share', {
+      method: 'POST',
+      body: JSON.stringify({ username: val('shareUser'), role: val('shareRole') }),
+    });
+    showMsg('共享成功'); await openDetail(currentBook.id);
+  } catch (e) { showMsg(e.message, true); }
+}
+
+async function downloadBackup() {
+  try {
+    const d = await api('/api/books/' + currentBook.id + '/data');
+    if (!d.content) { showMsg('该物品册还没有备份数据', true); return; }
+    const blob = new Blob([d.content], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = currentBook.name + '-backup.json';
+    a.click();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+if (token) loadBooks().catch(() => { token = ''; document.getElementById('authCard').classList.remove('hidden'); });
+</script>
+</body>
+</html>

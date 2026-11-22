@@ -26,3 +26,17 @@ jobs:
 
       - name: 单元测试
         run: flutter test
+
+  server-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: BoxBook 服务端测试
+        run: |
+          cd server
+          dart pub get
+          dart analyze
+          dart test

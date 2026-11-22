@@ -72,14 +72,32 @@ class _AiChatPageState extends State<AiChatPage> {
     _scrollToBottom();
 
     try {
-      final reply = await _chat.send(text, ownerName: store.settings.owner);
-      setState(() => _items.add(_Bubble.assistant(reply)));
+      await _chat.sendStreaming(
+        text,
+        ownerName: store.settings.owner,
+        onDelta: (partial) {
+          setState(() {
+            if (_items.isNotEmpty) {
+              _items[_items.length - 1] = _Bubble.assistant(partial);
+            }
+          });
+          _scrollToBottom();
+        },
+      );
     } on GlmException catch (err) {
-      setState(() => _items.add(_Bubble.assistant('⚠️ ${err.message}', isError: true)));
+      setState(() {
+        if (_items.isNotEmpty) {
+          _items[_items.length - 1] = _Bubble.assistant('⚠️ ${err.message}', isError: true);
+        }
+      });
     } catch (err) {
-      setState(() => _items.add(_Bubble.assistant('⚠️ 出错了：$err', isError: true)));
+      setState(() {
+        if (_items.isNotEmpty) {
+          _items[_items.length - 1] = _Bubble.assistant('⚠️ 出错了：$err', isError: true);
+        }
+      });
     } finally {
-      setState(() => _sending = false);
+      if (mounted) setState(() => _sending = false);
       _scrollToBottom();
     }
   }

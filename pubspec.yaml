@@ -2,7 +2,7 @@ name: guiwu
 description: "物盒册 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.4.0+8
+version: 1.5.0+9
 
 environment:
   sdk: ^3.14.0
@@ -27,6 +27,9 @@ dependencies:
   http: ^1.2.0
   material_ui: ^1.11.1
   webdav_client_plus: ^3.0.0
+  supabase: ^2.16.5
+  window_manager: ^0.7.0
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +68,11 @@ flutter_launcher_icons:
 flutter_native_splash:
   color: "#2E6B5E"
   image: "assets/icons/splash-logo.png"
+  color_dark: "#1C1B18"
+  image_dark: "assets/icons/splash-logo.png"
   android_12:
     image: "assets/icons/splash-logo.png"
     color: "#2E6B5E"
+    color_dark: "#1C1B18"
+    image_dark: "assets/icons/splash-logo.png"
   web: true
