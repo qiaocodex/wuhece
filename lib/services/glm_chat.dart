@@ -42,9 +42,10 @@ class ChatTurn {
 }
 
 class GlmChatService {
-  GlmChatService({required this.apiKey, this.model = 'glm-4.5-flash'});
+  GlmChatService({required this.apiKey, this.model = defaultModel, http.Client? client})
+      : _client = client ?? http.Client();
 
-  final http.Client _client = http.Client();
+  late final http.Client _client;
 
   static const endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
   static const defaultModel = 'glm-4.5-flash';
@@ -60,15 +61,14 @@ class GlmChatService {
   static const int _maxHistoryTurns = 12;
 
   /// 探测 key 是否可用（设置页「测试连接」）
-  static Future<void> probe({required String apiKey, String model = defaultModel}) async {
-    final body = jsonEncode({
+  Future<void> probe() async {
+    final data = await _post(jsonEncode({
       'model': model,
       'messages': [
         {'role': 'user', 'content': '回复「连接成功」四个字'},
       ],
       'max_tokens': 16,
-    });
-    final data = await _post(body: body, apiKey: apiKey);
+    }));
     final choices = data['choices'] as List?;
     if (choices == null || choices.isEmpty) {
       throw GlmException('接口返回异常，请检查模型名称是否正确');
@@ -85,12 +85,13 @@ class GlmChatService {
     _trimHistory();
 
     for (var round = 0; round < 3; round++) {
-      final data = await _post(body: jsonEncode({
+      final data = await _post(jsonEncode({
         'model': model,
-        'messages': [_systemTurn(ownerName), ...history.map((t) => t.data)],
+        // history[0] 已含 system 轮（首次发送时插入），全部取线格式数据
+        'messages': [...history.map((t) => t.data)],
         'tools': _tools,
         'temperature': 0.3,
-      }), apiKey: apiKey);
+      }));
 
       final choices = data['choices'] as List?;
       if (choices == null || choices.isEmpty) {
@@ -148,7 +149,8 @@ class GlmChatService {
         })
         ..body = jsonEncode({
           'model': model,
-          'messages': [_systemTurn(ownerName), ...history.map((t) => t.data)],
+          // history[0] 已含 system 轮（首次发送时插入），全部取线格式数据
+          'messages': [...history.map((t) => t.data)],
           'tools': _tools,
           'temperature': 0.3,
           'stream': true,
@@ -292,24 +294,23 @@ class GlmChatService {
     }
   }
 
-  static Future<Map<String, dynamic>> _post({
-    required String body,
-    required String apiKey,
-  }) async {
+  Future<Map<String, dynamic>> _post(String body) async {
     http.Response response;
     try {
-      response = await http.post(
-        Uri.parse(endpoint),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 60));
+      response = await _client
+          .post(
+            Uri.parse(endpoint),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 60));
     } on TimeoutException {
       throw GlmException('请求超时，请检查网络后重试');
     } catch (err) {
-      throw GlmException('网络连接失败，请检查网络后重试');
+      throw GlmException('网络连接失败：$err');
     }
 
     if (response.statusCode == 401) {

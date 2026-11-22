@@ -514,7 +514,7 @@ class _AiSectionState extends State<_AiSection> {
     }
     setState(() => _testing = true);
     try {
-      await GlmChatService.probe(apiKey: key, model: _model);
+      await GlmChatService(apiKey: key, model: _model).probe();
       if (mounted) toast(context, '连接成功，可以开始对话录入');
     } on GlmException catch (err) {
       if (mounted) toast(context, err.message, error: true);

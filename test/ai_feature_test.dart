@@ -1,8 +1,12 @@
 /// Phase A 功能测试：GLM 工具执行 / 搜索历史 / AI 页与首启引导冒烟
 library;
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guiwu/services/glm_chat.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:guiwu/store/app_store.dart';
 import 'package:guiwu/ui/pages/ai_chat_page.dart';
 import 'package:guiwu/ui/shell.dart';
@@ -87,6 +91,45 @@ void main() {
       expect(store.searchHistory().first, 'k11');
       store.clearSearchHistory();
       expect(store.searchHistory(), isEmpty);
+    });
+  });
+
+
+  group('AI 请求体序列化', () {
+    test('send 请求体可解析且 messages 均为对象（回归 ChatTurn 泄漏）', () async {
+      await _freshStore();
+      String? capturedBody;
+      final client = MockClient((request) async {
+        capturedBody = request.body;
+        return http.Response.bytes(
+          utf8.encode(jsonEncode({
+            'choices': [
+              {
+                'message': {'role': 'assistant', 'content': '好的，已记录羽毛球拍'},
+                'finish_reason': 'stop',
+              }
+            ],
+          })),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      final svc = GlmChatService(apiKey: 'test', client: client);
+      final reply = await svc.send('今天买羽毛球拍花了50块', ownerName: '我');
+      expect(reply, '好的，已记录羽毛球拍');
+
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+      final messages = body['messages'] as List;
+      expect(messages, isNotEmpty);
+      for (final m in messages) {
+        expect(m, isA<Map<String, dynamic>>(), reason: 'ChatTurn 实例泄漏到了请求体');
+        expect((m as Map)['role'], isNotNull);
+      }
+      // system 轮恰好一次且在首位
+      expect((messages.first as Map)['role'], 'system');
+      expect(messages.where((m) => (m as Map)['role'] == 'system').length, 1);
+      // 用户消息在末尾
+      expect((messages.last as Map)['role'], 'user');
     });
   });
 
