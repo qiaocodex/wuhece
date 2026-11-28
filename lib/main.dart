@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'services/sync/sync_service.dart';
 import 'services/window.dart';
 import 'store/app_store.dart';
 import 'ui/theme.dart';
@@ -43,4 +44,7 @@ Future<void> main() async {
 
   final store = AppStore(prefs)..load();
   runApp(GuiwuApp(store: store));
+
+  // 启动自动同步（开关开启且配置完整时静默智能同步，冲突只记同步记录）
+  Future.delayed(const Duration(seconds: 4), () => SyncService.maybeAutoSync(store));
 }

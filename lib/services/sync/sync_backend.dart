@@ -9,11 +9,13 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'baidu_backend.dart';
 import 'boxbook_backend.dart';
 import 's3_backend.dart';
 import 'supabase_backend.dart';
 import 'webdav_backend.dart';
 
+export 'baidu_backend.dart' show BaiduBackend, BaiduDeviceCode, BaiduToken;
 export 'boxbook_backend.dart' show BoxBookBook, BoxBookBackend;
 export 's3_backend.dart' show S3Backend;
 export 'supabase_backend.dart' show SupabaseBackend;
@@ -140,8 +142,41 @@ class SyncSettings {
   }
 }
 
+/// 服务商显示名（设置页 / 同步记录页共用）
+String syncProviderLabel(String provider) => switch (provider) {
+      'baidu' => '百度网盘',
+      'webdav' => 'WebDAV',
+      'supabase' => 'Supabase',
+      's3' => 'S3 协议',
+      'boxbook' => 'BoxBook Cloud',
+      _ => provider,
+    };
+
+/// 各服务商的必填字段（用于配置完整性判断，与设置页校验一致）
+const Map<String, List<String>> _kRequiredFields = {
+  'webdav': ['url', 'user', 'password'],
+  'supabase': ['url', 'anonKey'],
+  's3': ['endpoint', 'accessKey', 'secretKey', 'bucket'],
+  'boxbook': ['url', 'user', 'password'],
+  'baidu': ['appKey', 'secretKey'],
+};
+
+/// 当前服务商的基础配置是否填写完整（baidu 另需已完成设备码授权）
+bool isProviderConfigured(SyncSettings settings) {
+  final fields = settings.fields[settings.provider] ?? const {};
+  for (final key in _kRequiredFields[settings.provider] ?? const <String>[]) {
+    if ((fields[key] ?? '').trim().isEmpty) return false;
+  }
+  return true;
+}
+
 /// 按当前设置构造同步后端
-SyncBackend buildBackend(SyncSettings settings) {
+///
+/// [onTokenRefreshed]：百度网盘 access_token 续期后的回写钩子（可空）。
+SyncBackend buildBackend(
+  SyncSettings settings, {
+  void Function(String accessToken, String refreshToken, int expiresInSeconds)? onTokenRefreshed,
+}) {
   String field(String provider, String key, [String fallback = '']) {
     final value = settings.fields[provider]?[key] ?? '';
     return value.isNotEmpty ? value : fallback;
@@ -168,6 +203,15 @@ SyncBackend buildBackend(SyncSettings settings) {
         serverUrl: field('boxbook', 'url'),
         token: field('boxbook', 'token'),
         bookId: int.tryParse(settings.bookId) ?? 0,
+      );
+    case 'baidu':
+      return BaiduBackend(
+        appKey: field('baidu', 'appKey'),
+        secretKey: field('baidu', 'secretKey'),
+        accessToken: field('baidu', 'accessToken'),
+        refreshToken: field('baidu', 'refreshToken'),
+        remoteDir: field('baidu', 'remoteDir', '/apps/物盒册'),
+        onTokenRefreshed: onTokenRefreshed,
       );
     default:
       return WebDavBackend(SyncConfig(

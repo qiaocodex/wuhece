@@ -6,7 +6,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../store/app_store.dart';
+import 'snapshot_store.dart';
 import 'sync_backend.dart';
+import 'sync_log.dart';
 
 /// 判定出的同步方向
 enum SyncDirection { upload, download, none }
@@ -25,6 +27,7 @@ class SyncService {
   static const configKey = 'guiwu.sync.config';
   static const lastAtKey = 'guiwu.sync.lastAt';
   static const lastExportedAtKey = 'guiwu.sync.exportedAt';
+  static const autoSyncKey = 'guiwu.sync.auto';
 
   /// 读取配置
   static SyncConfig? loadConfig(SharedPreferences prefs) {
@@ -102,39 +105,78 @@ class SyncService {
     return SyncDirection.download;
   }
 
-  /// 上传备份：生成 JSON 写入云端，并记录同步标记
+  /// 上传备份：先拍本地快照（保留变更前状态），生成 JSON 写入云端并记录标记
   static Future<SyncOutcome> uploadBackup(
     AppStore store,
     SyncBackend backend,
-    SharedPreferences prefs,
-  ) async {
+    SharedPreferences prefs, {
+    String provider = '',
+  }) async {
     final content = store.exportJson();
     try {
+      await _takeSnapshot(store);
       await backend.upload(content);
     } on SyncException catch (err) {
+      await SyncLog.add(prefs, SyncLogEntry(
+        at: DateTime.now().toIso8601String(),
+        action: 'upload',
+        provider: provider,
+        ok: false,
+        message: err.message,
+      ));
       return SyncOutcome(false, err.message, direction: SyncDirection.upload);
     }
     await _mark(prefs, content);
+    await SyncLog.add(prefs, SyncLogEntry(
+      at: DateTime.now().toIso8601String(),
+      action: 'upload',
+      provider: provider,
+      ok: true,
+      message: '已上传备份到云端（${store.items.length} 件物品）',
+    ));
     return SyncOutcome(true, '已上传备份到云端', direction: SyncDirection.upload);
   }
 
-  /// 从云端恢复：下载并覆盖本地数据（内容有效性由 importJson 校验）
+  /// 从云端恢复：下载并覆盖本地数据（恢复前拍快照，内容有效性由 importJson 校验）
   static Future<SyncOutcome> downloadBackup(
     AppStore store,
     SyncBackend backend,
-    SharedPreferences prefs,
-  ) async {
+    SharedPreferences prefs, {
+    String provider = '',
+  }) async {
     final content = await backend.download();
     if (content == null) {
+      await SyncLog.add(prefs, SyncLogEntry(
+        at: DateTime.now().toIso8601String(),
+        action: 'download',
+        provider: provider,
+        ok: false,
+        message: '云端还没有备份',
+      ));
       return SyncOutcome(false, '云端还没有备份', direction: SyncDirection.download);
     }
     try {
+      await _takeSnapshot(store);
       store.importJson(content);
     } on FormatException catch (err) {
+      await SyncLog.add(prefs, SyncLogEntry(
+        at: DateTime.now().toIso8601String(),
+        action: 'download',
+        provider: provider,
+        ok: false,
+        message: '云端备份无法解析：${err.message}',
+      ));
       return SyncOutcome(false, '云端备份无法解析：${err.message}',
           direction: SyncDirection.download);
     }
     await _mark(prefs, content);
+    await SyncLog.add(prefs, SyncLogEntry(
+      at: DateTime.now().toIso8601String(),
+      action: 'download',
+      provider: provider,
+      ok: true,
+      message: '已从云端恢复数据',
+    ));
     return SyncOutcome(true, '已从云端恢复数据', direction: SyncDirection.download);
   }
 
@@ -144,31 +186,85 @@ class SyncService {
   static Future<SyncDecision> smartSync(
     AppStore store,
     SyncBackend backend,
-    SharedPreferences prefs,
-  ) async {
-    final remote = await backend.download();
-    final direction = decide(
-      remoteContent: remote,
-      store: store,
-      lastSyncExportedAt: prefs.getString(lastExportedAtKey),
-    );
-    switch (direction) {
-      case SyncDirection.none:
-        return SyncDecision.none();
-      case SyncDirection.download:
-        final outcome = await downloadBackup(store, backend, prefs);
-        return SyncDecision.done(outcome);
-      case SyncDirection.upload:
-        final remoteAt = remote == null ? null : remoteExportedAt(remote);
-        final lastSync = prefs.getString(lastExportedAtKey);
-        final cloudHasOtherChanges =
-            remote != null && (lastSync == null || remoteAt != lastSync);
-        if (cloudHasOtherChanges && localLatestUpdatedAt(store) != null) {
-          // 云端存在非本机写入的备份：交由用户决定
-          return SyncDecision.conflict(remoteAt: remoteAt, remoteContent: remote);
-        }
-        final outcome = await uploadBackup(store, backend, prefs);
-        return SyncDecision.done(outcome);
+    SharedPreferences prefs, {
+    String provider = '',
+    String action = 'smart',
+  }) async {
+    SyncDecision decision;
+    try {
+      final remote = await backend.download();
+      final direction = decide(
+        remoteContent: remote,
+        store: store,
+        lastSyncExportedAt: prefs.getString(lastExportedAtKey),
+      );
+      switch (direction) {
+        case SyncDirection.none:
+          decision = SyncDecision.none();
+        case SyncDirection.download:
+          decision = SyncDecision.done(await downloadBackup(store, backend, prefs, provider: provider));
+        case SyncDirection.upload:
+          final remoteAt = remote == null ? null : remoteExportedAt(remote);
+          final lastSync = prefs.getString(lastExportedAtKey);
+          final cloudHasOtherChanges =
+              remote != null && (lastSync == null || remoteAt != lastSync);
+          if (cloudHasOtherChanges && localLatestUpdatedAt(store) != null) {
+            // 云端存在非本机写入的备份：交由用户决定
+            decision = SyncDecision.conflict(remoteAt: remoteAt, remoteContent: remote);
+          } else {
+            decision = SyncDecision.done(await uploadBackup(store, backend, prefs, provider: provider));
+          }
+      }
+    } on SyncException catch (err) {
+      await SyncLog.add(prefs, SyncLogEntry(
+        at: DateTime.now().toIso8601String(),
+        action: action,
+        provider: provider,
+        ok: false,
+        message: err.message,
+      ));
+      rethrow;
+    }
+    await SyncLog.add(prefs, SyncLogEntry(
+      at: DateTime.now().toIso8601String(),
+      action: action,
+      provider: provider,
+      ok: decision.kind != 'conflict' && decision.outcome.ok,
+      message: decision.kind == 'conflict'
+          ? '本地与云端都有变更，等待处理'
+          : decision.outcome.message,
+    ));
+    return decision;
+  }
+
+  /// 启动自动同步：开关开启且配置完整时静默执行智能同步；冲突不弹窗只记记录。
+  /// 返回 decision 供调用方展示（可为 null 表示未触发）。
+  static Future<SyncDecision?> maybeAutoSync(AppStore store) async {
+    final prefs = store.prefs;
+    if (prefs.getBool(autoSyncKey) != true) return null;
+    final settings = SyncSettings.load(prefs);
+    if (!isProviderConfigured(settings)) return null;
+    if (settings.provider == 'boxbook' && (settings.fields['boxbook']?['token'] ?? '').isEmpty) {
+      return null;
+    }
+    if (settings.provider == 'baidu' && (settings.fields['baidu']?['accessToken'] ?? '').isEmpty) {
+      return null;
+    }
+    final backend = buildBackend(settings);
+    try {
+      return await smartSync(store, backend, prefs,
+          provider: settings.provider, action: 'auto');
+    } on SyncException {
+      return null; // 已记入同步记录，启动阶段不打扰用户
+    }
+  }
+
+  /// 变更前拍本地快照（尽力而为：介质不可用或测试环境失败时静默跳过）
+  static Future<void> _takeSnapshot(AppStore store) async {
+    try {
+      await SnapshotStore.save(store);
+    } catch (_) {
+      // 快照失败不阻断同步主流程
     }
   }
 

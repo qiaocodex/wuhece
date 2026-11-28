@@ -75,7 +75,7 @@ void main() {
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
-      expect(find.text('云同步'), findsOneWidget);
+      expect(find.text('网盘 & 备份'), findsOneWidget);
       expect(find.text('AI 助手'), findsOneWidget);
     });
 

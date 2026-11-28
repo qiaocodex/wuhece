@@ -2,7 +2,7 @@ name: guiwu
 description: "物盒册 · 个人物品资产与收纳空间管理（四端：Android / iOS / Web / Windows / macOS）"
 publish_to: 'none'
 
-version: 1.6.0+12
+version: 1.7.0+13
 
 environment:
   sdk: ^3.14.0
@@ -30,6 +30,8 @@ dependencies:
   supabase: ^2.16.5
   window_manager: ^0.7.0
   crypto: ^3.0.8
+  url_launcher: ^6.3.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

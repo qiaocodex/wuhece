@@ -4,6 +4,11 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guiwu/store/app_store.dart';
 import 'package:guiwu/ui/pages/analytics_page.dart';
+import 'package:guiwu/ui/pages/backup_data_page.dart';
+import 'package:guiwu/ui/pages/backup_page.dart';
+import 'package:guiwu/ui/pages/snapshot_page.dart';
+import 'package:guiwu/ui/pages/sync_log_page.dart';
+import 'package:guiwu/ui/pages/sync_page.dart';
 import 'package:guiwu/ui/pages/dashboard_page.dart';
 import 'package:guiwu/ui/pages/insights_page.dart';
 import 'package:guiwu/ui/pages/items_page.dart';
@@ -80,5 +85,37 @@ void main() {
     await _pump(tester, const SettingsPage());
     expect(tester.takeException(), isNull);
     expect(find.text('数据管理'), findsOneWidget);
+  });
+
+  testWidgets('网盘&备份中心页构建无异常', (tester) async {
+    await _pump(tester, const BackupPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('网盘同步'), findsOneWidget);
+  });
+
+  testWidgets('网盘同步页构建无异常（含百度网盘服务商）', (tester) async {
+    await _pump(tester, const SyncPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('WebDAV'), findsOneWidget); // 默认服务商
+    expect(find.text('同步至'), findsOneWidget);
+    expect(find.text('启动自动同步'), findsOneWidget);
+  });
+
+  testWidgets('同步记录页空态构建无异常', (tester) async {
+    await _pump(tester, const SyncLogPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('还没有同步记录'), findsOneWidget);
+  });
+
+  testWidgets('历史版本备份页空态构建无异常', (tester) async {
+    await _pump(tester, const SnapshotPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('还没有快照'), findsOneWidget);
+  });
+
+  testWidgets('备份数据页构建无异常', (tester) async {
+    await _pump(tester, const BackupDataPage());
+    expect(tester.takeException(), isNull);
+    expect(find.text('导出完整备份'), findsOneWidget);
   });
 }

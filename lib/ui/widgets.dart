@@ -89,6 +89,44 @@ class AppCard extends StatelessWidget {
   }
 }
 
+/// 设置页通用行：左侧标题+描述，右侧动作（原 settings_page 私有 _SettingRow 提升）
+class SettingRow extends StatelessWidget {
+  const SettingRow({super.key, required this.title, required this.desc, required this.action, this.titleColor});
+
+  final String title;
+  final String desc;
+  final Widget action;
+  final Color? titleColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: titleColor ?? context.gc.ink),
+                ),
+                const SizedBox(height: 2),
+                Text(desc, style: TextStyle(fontSize: 12, color: context.gc.muted, height: 1.5)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Flexible 包裹：给非 flex 子项一个有界的宽松约束，避免下拉类控件崩溃
+          Flexible(child: action),
+        ],
+      ),
+    );
+  }
+}
+
 /// 带标题的分区卡片
 class SectionCard extends StatelessWidget {
   const SectionCard({

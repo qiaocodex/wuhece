@@ -15,10 +15,9 @@ import '../../services/sync/sync_service.dart';
 import '../../store/app_store.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'backup_page.dart';
 import 'category_form.dart';
 import 'tags_page.dart';
-
-part 'sync_section.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -47,7 +46,7 @@ class SettingsPage extends StatelessWidget {
           context,
           children: [
             const PageHeader(title: '设置', sub: '数据备份、分类管理与使用偏好'),
-            const _SyncSection(),
+            _backupEntrySection(context),
             const SizedBox(height: kSectionGap),
             _dataSection(context),
             const SizedBox(height: kSectionGap),
@@ -64,6 +63,38 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  /* ------------------------- 网盘 & 备份入口 ------------------------- */
+
+  Widget _backupEntrySection(BuildContext context) {
+    final store = AppStore.instance;
+    final prefs = store.prefs;
+    final settings = SyncSettings.load(prefs);
+    final lastSyncAt = SyncService.lastSyncAt(prefs) ?? '';
+    final configured = isProviderConfigured(settings) &&
+        (settings.provider != 'baidu' || (settings.fields['baidu']?['accessToken'] ?? '').isNotEmpty) &&
+        (settings.provider != 'boxbook' || (settings.fields['boxbook']?['token'] ?? '').isNotEmpty);
+
+    return SectionCard(
+      title: '网盘 & 备份',
+      sub: '网盘同步 · 备份数据 · 历史版本',
+      action: configured && lastSyncAt.isNotEmpty
+          ? MiniBadge(label: '同步于 ${formatDate(lastSyncAt)}', color: context.gc.primary, bg: context.gc.primaryWeak)
+          : MiniBadge(label: '未配置', color: context.gc.muted, bg: context.gc.bgDeep),
+      child: SettingRow(
+        title: '网盘同步与备份中心',
+        desc: configured
+            ? '当前通过 ${syncProviderLabel(settings.provider)} 同步，点按进入管理'
+            : '支持 百度网盘 / WebDAV / Supabase / S3 / BoxBook，点按进入配置',
+        action: IconButton(
+          onPressed: () => openBackupPage(context),
+          icon: const Icon(Icons.chevron_right, size: 18),
+          color: context.gc.muted,
+          padding: EdgeInsets.zero,
+        ),
+      ),
+    );
+  }
+
   /* ------------------------- 数据管理 ------------------------- */
 
   Widget _dataSection(BuildContext context) {
@@ -73,19 +104,10 @@ class SettingsPage extends StatelessWidget {
 
     return SectionCard(
       title: '数据管理',
-      sub: '所有数据保存在本机，可随时备份或迁移',
+      sub: '所有数据保存在本机，可随时迁移（完整备份见「网盘 & 备份」）',
       child: Column(
         children: [
-          _SettingRow(
-            title: '导出完整备份',
-            desc: '包含物品、空间、分类与使用记录的 JSON 文件',
-            action: OutlinedButton.icon(
-              onPressed: () => _exportJson(context),
-              icon: const Icon(Icons.download_outlined, size: 14),
-              label: const Text('导出 JSON'),
-            ),
-          ),
-          _SettingRow(
+          SettingRow(
             title: '导出物品清单',
             desc: 'Excel / 表格软件可直接打开的 CSV，共 $csvCount 条',
             action: OutlinedButton.icon(
@@ -94,7 +116,7 @@ class SettingsPage extends StatelessWidget {
               label: const Text('导出 CSV'),
             ),
           ),
-          _SettingRow(
+          SettingRow(
             title: '从 CSV 批量导入',
             desc: canPick
                 ? '支持与本应用导出口径一致的表格，导入时只新增、不覆盖'
@@ -105,16 +127,7 @@ class SettingsPage extends StatelessWidget {
               label: const Text('导入 CSV'),
             ),
           ),
-          _SettingRow(
-            title: '导入备份',
-            desc: '从 JSON 备份恢复，会覆盖当前全部数据（Web 版备份可直接使用）',
-            action: OutlinedButton.icon(
-              onPressed: canPick ? () => _importJson(context) : null,
-              icon: const Icon(Icons.upload_outlined, size: 14),
-              label: const Text('选择文件'),
-            ),
-          ),
-          _SettingRow(
+          SettingRow(
             title: '重置为示例数据',
             desc: '清空当前数据，载入一套完整的演示内容',
             action: OutlinedButton.icon(
@@ -123,7 +136,7 @@ class SettingsPage extends StatelessWidget {
               label: const Text('重置'),
             ),
           ),
-          _SettingRow(
+          SettingRow(
             title: '清空全部数据',
             titleColor: context.gc.danger,
             desc: '删除本机保存的所有物品、空间与记录，不可撤销',
@@ -142,16 +155,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _exportJson(BuildContext context) async {
-    final store = AppStore.instance;
-    final ok = await file_io.exportTextFile(
-      fileName: 'guiwu-backup-${toISODate()}.json',
-      content: store.exportJson(),
-      mime: 'application/json',
-    );
-    if (ok && context.mounted) toast(context, '备份已导出');
-  }
-
   Future<void> _exportCsv(BuildContext context) async {
     final ok = await file_io.exportTextFile(
       fileName: 'guiwu-items-${toISODate()}.csv',
@@ -159,29 +162,6 @@ class SettingsPage extends StatelessWidget {
       mime: 'text/csv',
     );
     if (ok && context.mounted) toast(context, 'CSV 已导出');
-  }
-
-  Future<void> _importJson(BuildContext context) async {
-    final content = await file_io.pickTextFileContent(
-      label: 'JSON 备份',
-      extensions: ['json'],
-      mime: 'application/json',
-    );
-    if (content == null || !context.mounted) return;
-    final ok = await confirmDialog(
-      context,
-      title: '导入备份',
-      message: '导入会覆盖当前全部数据，建议先导出一次备份。确定继续吗？',
-      confirmText: '继续导入',
-      danger: true,
-    );
-    if (!ok || !context.mounted) return;
-    try {
-      AppStore.instance.importJson(content);
-      toast(context, '数据已导入');
-    } catch (err) {
-      toast(context, err is FormatException ? err.message : '导入失败，文件格式不正确', error: true);
-    }
   }
 
   Future<void> _importCsv(BuildContext context) async {
@@ -360,7 +340,7 @@ class SettingsPage extends StatelessWidget {
       sub: '外观与整理建议的判定规则',
       child: Column(
         children: [
-          _SettingRow(
+          SettingRow(
             title: '深色模式',
             desc: '跟随系统 / 浅色 / 深色（当前 ${_themeModeLabel(store.settings.themeMode)}）',
             action: SelectField<String>(
@@ -377,7 +357,7 @@ class SettingsPage extends StatelessWidget {
               },
             ),
           ),
-          _SettingRow(
+          SettingRow(
             title: '闲置判定天数',
             desc: '超过这个天数未记录使用，就提示整理（当前 ${store.settings.idleDays} 天）',
             // 固定宽度：下拉不能直接放进无界宽度的 Row
@@ -401,7 +381,7 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          _SettingRow(
+          SettingRow(
             title: '数据存储',
             desc: '已使用 ${bytesText(used)} · ${store.items.length} 条物品记录',
             action: Text(
@@ -618,43 +598,6 @@ class _AiSectionState extends State<_AiSection> {
             '建议在桌面 / 移动端使用 AI 对话。',
             style: TextStyle(fontSize: 11, color: context.gc.muted2, height: 1.6),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingRow extends StatelessWidget {
-  const _SettingRow({required this.title, required this.desc, required this.action, this.titleColor});
-
-  final String title;
-  final String desc;
-  final Widget action;
-  final Color? titleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: titleColor ?? context.gc.ink),
-                ),
-                const SizedBox(height: 2),
-                Text(desc, style: TextStyle(fontSize: 12, color: context.gc.muted, height: 1.5)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Flexible 包裹：给非 flex 子项一个有界的宽松约束，避免下拉类控件崩溃
-          Flexible(child: action),
         ],
       ),
     );
