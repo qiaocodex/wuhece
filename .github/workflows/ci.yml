@@ -21,6 +21,10 @@ jobs:
       - name: 拉取依赖
         run: flutter pub get
 
+      # window_manager→nativeapi 的 C native assets 构建需要 GTK/X11 开发头文件
+      - name: 安装 Linux 桌面构建依赖
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libgtk-3-dev libx11-dev libxi-dev
+
       - name: 静态分析
         run: flutter analyze --no-fatal-infos
 
