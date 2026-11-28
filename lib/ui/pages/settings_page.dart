@@ -484,6 +484,7 @@ class _AiSection extends StatefulWidget {
 class _AiSectionState extends State<_AiSection> {
   late final TextEditingController _keyCtrl;
   late String _model;
+  late bool _quickAnswer;
   bool _testing = false;
 
   @override
@@ -492,6 +493,7 @@ class _AiSectionState extends State<_AiSection> {
     final settings = AppStore.instance.settings;
     _keyCtrl = TextEditingController(text: settings.aiApiKey ?? '');
     _model = settings.aiModel;
+    _quickAnswer = settings.aiQuickAnswer;
   }
 
   @override
@@ -501,7 +503,11 @@ class _AiSectionState extends State<_AiSection> {
   }
 
   void _save() {
-    AppStore.instance.updateSettings(aiApiKey: _keyCtrl.text.trim(), aiModel: _model);
+    AppStore.instance.updateSettings(
+      aiApiKey: _keyCtrl.text.trim(),
+      aiModel: _model,
+      aiQuickAnswer: _quickAnswer,
+    );
     toast(context, 'AI 配置已保存');
   }
 
@@ -557,6 +563,29 @@ class _AiSectionState extends State<_AiSection> {
                   ),
               ],
               onChanged: (v) => setState(() => _model = v ?? _model),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FormField2(
+            label: '回答方式',
+            hint: '快速回答会跳过深度思考，普通问答明显更快；录入物品不受影响（常用说法自动本地秒录）',
+            child: Row(
+              children: [
+                Switch(
+                  value: _quickAnswer,
+                  onChanged: (v) {
+                    setState(() => _quickAnswer = v);
+                    AppStore.instance.updateSettings(aiQuickAnswer: v);
+                  },
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _quickAnswer ? '快速回答（不深度思考）' : '深度思考（默认，更聪明）',
+                    style: TextStyle(fontSize: 13, color: context.gc.ink),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),

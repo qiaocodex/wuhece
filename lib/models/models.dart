@@ -244,6 +244,7 @@ class AppSettings {
     this.owner = '我',
     this.aiApiKey,
     this.aiModel = 'glm-4.5-flash',
+    this.aiQuickAnswer = false,
     this.themeMode = 'system',
   });
 
@@ -255,6 +256,9 @@ class AppSettings {
   String? aiApiKey;
   String aiModel;
 
+  /// AI 快速回答：关闭深度思考换响应速度（glm-4.5 系列的 thinking 参数）
+  bool aiQuickAnswer;
+
   /// 深色模式：system / light / dark
   String themeMode;
 
@@ -264,6 +268,7 @@ class AppSettings {
         owner: json?['owner'] as String? ?? '我',
         aiApiKey: json?['aiApiKey'] as String?,
         aiModel: json?['aiModel'] as String? ?? 'glm-4.5-flash',
+        aiQuickAnswer: json?['aiQuickAnswer'] as bool? ?? false,
         themeMode: json?['themeMode'] as String? ?? 'system',
       );
 
@@ -273,6 +278,7 @@ class AppSettings {
         'owner': owner,
         'aiApiKey': aiApiKey,
         'aiModel': aiModel,
+        'aiQuickAnswer': aiQuickAnswer,
         'themeMode': themeMode,
       };
 }

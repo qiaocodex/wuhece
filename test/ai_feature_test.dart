@@ -1,9 +1,11 @@
 /// Phase A 功能测试：GLM 工具执行 / 搜索历史 / AI 页与首启引导冒烟
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:guiwu/models/models.dart';
 import 'package:guiwu/services/glm_chat.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -130,6 +132,68 @@ void main() {
       expect(messages.where((m) => (m as Map)['role'] == 'system').length, 1);
       // 用户消息在末尾
       expect((messages.last as Map)['role'], 'user');
+    });
+
+    test('开启快速回答时请求体带 thinking.disabled', () async {
+      await _freshStore();
+      String? capturedBody;
+      final client = MockClient((request) async {
+        capturedBody = request.body;
+        return http.Response.bytes(
+          utf8.encode(jsonEncode({
+            'choices': [
+              {'message': {'role': 'assistant', 'content': 'ok'}, 'finish_reason': 'stop'},
+            ],
+          })),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      final svc = GlmChatService(apiKey: 'test', quickAnswer: true, client: client);
+      await svc.send('在吗', ownerName: '我');
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+      expect((body['thinking'] as Map)['type'], 'disabled');
+    });
+
+    test('sendStreaming 解析 reasoning_content 思考过程与正文增量', () async {
+      await _freshStore();
+      final sseLines = [
+        'data: {"choices":[{"delta":{"reasoning_content":"正在想"}}]}',
+        'data: {"choices":[{"delta":{"content":"你好"}}]}',
+        'data: {"choices":[{"delta":{"content":"呀"}}]}',
+        'data: [DONE]',
+      ];
+      final client = MockClient.streaming((request, bodyStream) async {
+        return http.StreamedResponse(
+          Stream.fromIterable(sseLines.map((s) => utf8.encode('$s\n\n'))),
+          200,
+        );
+      });
+      final svc = GlmChatService(apiKey: 'test', client: client);
+      final thoughts = <String>[];
+      final deltas = <String>[];
+      final reply = await svc.sendStreaming(
+        '在吗',
+        ownerName: '我',
+        onDelta: deltas.add,
+        onThinking: thoughts.add,
+      );
+      expect(reply, '你好呀');
+      expect(thoughts.single, '正在想');
+      expect(deltas.last, '你好呀');
+    });
+
+    test('executeTool add_item 回调新建物品（供页面即时出卡片）', () async {
+      final store = await _freshStore();
+      final svc = GlmChatService(apiKey: 'test');
+      Item? created;
+      svc.executeTool('add_item', {'name': '回调测试', 'price': 9.9}, onToolEvent: (name, item) {
+        expect(name, 'add_item');
+        created = item;
+      });
+      expect(created, isNotNull);
+      expect(created!.name, '回调测试');
+      expect(store.items.first.id, created!.id);
     });
   });
 

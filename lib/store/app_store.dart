@@ -415,6 +415,7 @@ class AppStore extends ChangeNotifier {
     String? owner,
     String? aiApiKey,
     String? aiModel,
+    bool? aiQuickAnswer,
     String? themeMode,
   }) {
     if (idleDays != null) settings.idleDays = idleDays;
@@ -422,6 +423,7 @@ class AppStore extends ChangeNotifier {
     if (owner != null) settings.owner = owner;
     if (aiApiKey != null) settings.aiApiKey = aiApiKey.isEmpty ? null : aiApiKey;
     if (aiModel != null) settings.aiModel = aiModel;
+    if (aiQuickAnswer != null) settings.aiQuickAnswer = aiQuickAnswer;
     if (themeMode != null) settings.themeMode = themeMode;
     _commit();
   }

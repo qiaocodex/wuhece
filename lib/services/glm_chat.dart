@@ -11,9 +11,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/models.dart';
 import '../store/app_store.dart';
 import 'dates.dart';
 import 'format.dart';
+import 'quick_entry.dart';
 
 /// GLM 调用异常（message 已是友好中文，可直接展示）
 class GlmException implements Exception {
@@ -42,7 +44,7 @@ class ChatTurn {
 }
 
 class GlmChatService {
-  GlmChatService({required this.apiKey, this.model = defaultModel, http.Client? client})
+  GlmChatService({required this.apiKey, this.model = defaultModel, this.quickAnswer = false, http.Client? client})
       : _client = client ?? http.Client();
 
   late final http.Client _client;
@@ -56,9 +58,26 @@ class GlmChatService {
   final String apiKey;
   final String model;
 
+  /// 快速回答：请求时关闭深度思考（仅 glm-4.5 / glm-5 系列支持该参数）
+  final bool quickAnswer;
+
   /// 会话历史（不含 system；线格式）
   final List<ChatTurn> history = [];
   static const int _maxHistoryTurns = 12;
+
+  bool get _modelSupportsThinking => RegExp(r'^glm-(4\.5|4\.6|5)').hasMatch(model);
+
+  /// 组装请求体（统一注入 tools / thinking 参数）
+  Map<String, dynamic> _chatBody(List<Map<String, dynamic>> messages, {bool stream = false}) {
+    return {
+      'model': model,
+      'messages': messages,
+      'tools': _tools,
+      'temperature': 0.3,
+      if (stream) 'stream': true,
+      if (quickAnswer && _modelSupportsThinking) 'thinking': {'type': 'disabled'},
+    };
+  }
 
   /// 探测 key 是否可用（设置页「测试连接」）
   Future<void> probe() async {
@@ -77,7 +96,12 @@ class GlmChatService {
 
   /// 发送一条用户消息；自动执行模型发起的本地工具（最多 3 轮），
   /// 返回 assistant 的最终回复文本。
-  Future<String> send(String userText, {required String ownerName}) async {
+  Future<String> send(
+    String userText, {
+    required String ownerName,
+    void Function(String thought)? onThinking,
+    void Function(String toolName, Item? createdItem)? onTool,
+  }) async {
     if (history.where((t) => t.role == 'user').isEmpty) {
       history.insert(0, _systemTurn(ownerName));
     }
@@ -85,13 +109,10 @@ class GlmChatService {
     _trimHistory();
 
     for (var round = 0; round < 3; round++) {
-      final data = await _post(jsonEncode({
-        'model': model,
+      final data = await _post(jsonEncode(_chatBody([
         // history[0] 已含 system 轮（首次发送时插入），全部取线格式数据
-        'messages': [...history.map((t) => t.data)],
-        'tools': _tools,
-        'temperature': 0.3,
-      }));
+        ...history.map((t) => t.data),
+      ])));
 
       final choices = data['choices'] as List?;
       if (choices == null || choices.isEmpty) {
@@ -115,7 +136,7 @@ class GlmChatService {
         final fn = (c['function'] ?? {}) as Map<String, dynamic>;
         final name = fn['name']?.toString() ?? '';
         final args = _parseArgs(fn['arguments']);
-        final result = executeTool(name, args);
+        final result = executeTool(name, args, onToolEvent: onTool);
         toolResults.add({
           'role': 'tool',
           'tool_call_id': c['id'],
@@ -128,12 +149,14 @@ class GlmChatService {
     return '（本轮工具调用次数过多，已中断，请换个说法重试）';
   }
 
-  /// 流式发送：通过 SSE 增量回调 assistant 部分文本，
+  /// 流式发送：通过 SSE 增量回调 assistant 部分文本与思考过程，
   /// 工具调用轮自动执行并继续生成，返回最终完整回复。
   Future<String> sendStreaming(
     String userText, {
     required String ownerName,
     required void Function(String partialText) onDelta,
+    void Function(String thought)? onThinking,
+    void Function(String toolName, Item? createdItem)? onTool,
   }) async {
     if (history.where((t) => t.role == 'user').isEmpty) {
       history.insert(0, _systemTurn(ownerName));
@@ -147,14 +170,10 @@ class GlmChatService {
           'Authorization': 'Bearer $apiKey',
           'Content-Type': 'application/json',
         })
-        ..body = jsonEncode({
-          'model': model,
+        ..body = jsonEncode(_chatBody([
           // history[0] 已含 system 轮（首次发送时插入），全部取线格式数据
-          'messages': [...history.map((t) => t.data)],
-          'tools': _tools,
-          'temperature': 0.3,
-          'stream': true,
-        });
+          ...history.map((t) => t.data),
+        ], stream: true));
 
       http.StreamedResponse response;
       try {
@@ -173,8 +192,9 @@ class GlmChatService {
         throw GlmException('接口错误 ${response.statusCode}：$snippet');
       }
 
-      // SSE 解析：累积文本增量与工具调用片段
+      // SSE 解析：累积正文 / 思考过程 / 工具调用片段
       var contentBuf = '';
+      var thoughtBuf = '';
       final toolCalls = <int, Map<String, dynamic>>{};
 
       await for (final raw in response.stream
@@ -201,6 +221,12 @@ class GlmChatService {
         if (contentDelta != null && contentDelta.toString().isNotEmpty) {
           contentBuf += contentDelta.toString();
           onDelta(contentBuf);
+        }
+        // 深度思考过程（glm-4.5 系列在 delta.reasoning_content 中流式输出）
+        final thoughtDelta = delta['reasoning_content'];
+        if (thoughtDelta != null && thoughtDelta.toString().isNotEmpty) {
+          thoughtBuf += thoughtDelta.toString();
+          onThinking?.call(thoughtBuf);
         }
         for (final tc in (delta['tool_calls'] as List? ?? const [])) {
           final tcm = tc as Map;
@@ -236,7 +262,7 @@ class GlmChatService {
         }));
         for (final entry in toolCalls.entries) {
           final fn = entry.value['function'] as Map<String, dynamic>;
-          final result = executeTool(fn['name']?.toString() ?? '', _parseArgs(fn['arguments']));
+          final result = executeTool(fn['name']?.toString() ?? '', _parseArgs(fn['arguments']), onToolEvent: onTool);
           history.add(ChatTurn({
             'role': 'tool',
             'tool_call_id': entry.value['id'],
@@ -379,12 +405,18 @@ class GlmChatService {
       ];
 
   /// 执行本地工具并返回给模型的结果文本（公开以便单测）
-  String executeTool(String name, Map<String, dynamic> args) {
+  /// [onToolEvent]：工具执行成功后回调（add_item 附带新建的物品）
+  String executeTool(
+    String name,
+    Map<String, dynamic> args, {
+    void Function(String toolName, Item? createdItem)? onToolEvent,
+  }) {
     try {
       switch (name) {
         case 'add_item':
-          return _toolAddItem(args);
+          return _toolAddItem(args, onToolEvent);
         case 'query_items':
+          onToolEvent?.call('query_items', null);
           return _toolQueryItems(args);
         default:
           return '错误：未知工具 $name';
@@ -394,53 +426,24 @@ class GlmChatService {
     }
   }
 
-  String _toolAddItem(Map<String, dynamic> args) {
+  String _toolAddItem(Map<String, dynamic> args, void Function(String, Item?)? onToolEvent) {
     final store = _store;
     final name = (args['name'] ?? '').toString().trim();
     if (name.isEmpty) return '错误：缺少物品名称，无法录入。请向用户询问物品名称。';
 
-    // 分类：按名查找，不存在则创建
-    final categoryName = (args['category_name'] ?? '').toString().trim();
-    final categoryId = categoryName.isNotEmpty
-        ? (store.ensureCategory(categoryName) ?? _fallbackCategoryId(store))
-        : _fallbackCategoryId(store);
-
-    // 空间：精确匹配 → 包含匹配
-    final spaceName = (args['space_name'] ?? '').toString().trim();
-    String? spaceId;
-    if (spaceName.isNotEmpty) {
-      for (final s in store.spaces) {
-        if (s.name == spaceName) {
-          spaceId = s.id;
-          break;
-        }
-      }
-      spaceId ??= store
-          .spaces
-          .where((s) => s.name.contains(spaceName))
-          .map((s) => s.id)
-          .firstOrNull;
-    }
-
-    final quantity = (args['quantity'] as num?)?.toInt() ?? 1;
-    final price = (args['price'] as num?)?.toDouble() ?? 0;
-    final rawDate = (args['purchase_date'] ?? '').toString().trim();
-    final purchaseDate = RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(rawDate) ? rawDate : toISODate();
-    final warrantyMonths = (args['warranty_months'] as num?)?.toInt() ?? 0;
-    final tags = (args['tags'] as List?)?.map((e) => e.toString()).where((e) => e.isNotEmpty).toList() ?? const <String>[];
-    final note = (args['note'] ?? '').toString();
-
-    final item = store.addItem(
+    final item = applyEntryToStore(
+      store,
       name: name,
-      categoryId: categoryId,
-      spaceId: spaceId,
-      quantity: quantity,
-      price: price,
-      purchaseDate: purchaseDate,
-      warrantyMonths: warrantyMonths,
-      tags: tags,
-      note: note,
+      categoryName: (args['category_name'] ?? '').toString(),
+      spaceName: (args['space_name'] ?? '').toString(),
+      quantity: (args['quantity'] as num?)?.toInt() ?? 1,
+      price: (args['price'] as num?)?.toDouble() ?? 0,
+      purchaseDate: (args['purchase_date'] ?? '').toString().trim(),
+      warrantyMonths: (args['warranty_months'] as num?)?.toInt() ?? 0,
+      tags: (args['tags'] as List?)?.map((e) => e.toString()).where((e) => e.isNotEmpty).toList() ?? const <String>[],
+      note: (args['note'] ?? '').toString(),
     );
+    onToolEvent?.call('add_item', item);
 
     final categoryLabel = store.getCategory(item.categoryId)?.name ?? '未分类';
     final spaceLabel = store.spacePathLabel(item.spaceId);
@@ -449,9 +452,6 @@ class GlmChatService {
         '数量 ${item.quantity}$valuePart，'
         '购入 ${item.purchaseDate}，位置：$spaceLabel）';
   }
-
-  String _fallbackCategoryId(AppStore store) =>
-      store.categories.isNotEmpty ? store.categories.first.id : 'cat-other';
 
   AppStore get _store => AppStore.instance;
 
