@@ -17,6 +17,8 @@ analyzer:
     - web/**
     - windows/**
     - macos/**
+    # 独立 Dart 包（自有 pubspec 与分析上下文），由 CI 的 server-test job 单独分析
+    - server/**
 
 linter:
   # The lint rules applied to this project can be customized in the
